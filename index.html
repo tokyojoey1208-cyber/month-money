@@ -351,16 +351,17 @@ select option { background: var(--surface); }
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px" id="csvCount"></div>
       <div class="csv-preview-list" id="csvRows"></div>
       <div class="form-actions">
-        <button class="btn btn-ghost" onclick="closeModal('csvOverlay')">취소</button>
+        <button class="btn btn-ghost" onclick="downloadCsv()">CSV 다운로드</button>
         <button class="btn btn-primary" onclick="importCsv()">저장</button>
       </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">저장이 안 되면 CSV 다운로드 → 구글 시트에 직접 붙여넣기</div>
     </div>
   </div>
 </div>
 
 <script>
 // ── 상수 ──
-const GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycbwDqrVsvZFYXh-WoHOcQ0kxK3Iu6wE-TtkYLmTuDT7t1KgXpFstveh-MkWuHz7VLPTk/exec';
+const GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycby57YsNkFZfvimF30_t3LVhNtSJRTE1o4JLJfsyVF1ryZeY5VuudOHwmIUVL8QSyo07/exec';
 const CATEGORIES = ['가계쇼핑','외식비','술자리','고정비','세금','병원','기타'];
 const FIXED_CATS = ['고정비','세금']; // 예산 바에서 변동비 제외 항목
 const CAT_COLORS = {'가계쇼핑':'#0a9e7a','외식비':'#d4860a','술자리':'#c4294a','고정비':'#2563b0','세금':'#1a7a5e','병원':'#2a8a2a','기타':'#888'};
@@ -417,15 +418,15 @@ async function verifyConnection() {
 // ── API ──
 async function apiGet(action, params={}) {
   const qs = new URLSearchParams({action, ...params}).toString();
-  const res = await fetch(`${gasUrl}?${qs}`, { redirect:'follow' });
+  const res = await fetch(`${gasUrl}?${qs}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
-// GAS는 POST CORS를 지원하지 않으므로 payload를 GET으로 전송
+// GAS POST는 CORS 미지원 → payload를 GET으로 전송
 async function apiPost(body) {
   if (!gasUrl) { alert('GAS URL을 연결해주세요.'); return null; }
   const payload = encodeURIComponent(JSON.stringify(body));
-  const res = await fetch(`${gasUrl}?payload=${payload}`, { redirect:'follow' });
+  const res = await fetch(`${gasUrl}?payload=${payload}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
@@ -783,12 +784,12 @@ function parsePaidy(text) {
 }
 
 function showCsvPreview(cardName) {
-  document.getElementById('csvCount').textContent = `${cardName} — ${parsedCsv.length}건 파싱됨. 카테고리 확인 후 가져오기`;
+  document.getElementById('csvCount').textContent = `${cardName} — ${parsedCsv.length}건 파싱됨. 카테고리 확인 후 저장`;
   document.getElementById('csvRows').innerHTML = parsedCsv.map((r,i) => `
     <div class="csv-row">
       <div class="csv-row-info">
         <div class="name">${r.date.slice(5)} ${r.item}</div>
-        <div class="sub">¥${fmt(r.amount)} · ${r.payment}</div>
+        <div class="sub">¥${fmt(r.amount)} · ${r.payment}${r.isBalance?' · 잔고':''}</div>
       </div>
       <select onchange="parsedCsv[${i}].category=this.value">
         ${CATEGORIES.map(c=>`<option value="${c}"${r.category===c?' selected':''}>${c}</option>`).join('')}
@@ -799,12 +800,39 @@ function showCsvPreview(cardName) {
 
 async function importCsv() {
   if (!parsedCsv.length) return;
-  const res = await apiPost({action:'bulkAdd', month:currentMonth, entries:parsedCsv});
-  if (res&&res.ok) {
-    closeModal('csvOverlay');
-    parsedCsv = [];
-    await loadMonth(currentMonth);
-  } else { alert('가져오기 실패. GAS 연결을 확인해주세요.'); }
+  const btn = event.target;
+  btn.textContent = '저장 중...';
+  btn.disabled = true;
+  try {
+    const res = await apiPost({action:'bulkAdd', month:currentMonth, entries:parsedCsv});
+    if (res && res.ok) {
+      closeModal('csvOverlay');
+      parsedCsv = [];
+      await loadMonth(currentMonth);
+    } else {
+      const msg = res && res.error ? res.error : '알 수 없는 오류';
+      alert(`저장 실패: ${msg}\n\nGAS 재배포가 필요하거나 연결이 끊겼어요.\n일단 CSV 다운로드로 구글 시트에 직접 붙여넣기 가능합니다.`);
+      btn.textContent = '저장';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    alert(`연결 오류: ${e.message}\n\nGAS URL을 확인하거나 재배포가 필요해요.\n아래 CSV 다운로드로 구글 시트에 직접 넣을 수 있어요.`);
+    btn.textContent = '저장';
+    btn.disabled = false;
+  }
+}
+
+function downloadCsv() {
+  if (!parsedCsv.length) return;
+  const header = 'ID,날짜,항목,카테고리,결제수단,금액,잔고여부,메모';
+  const rows = parsedCsv.map((r,i) =>
+    `${Date.now()+i},${r.date},"${r.item}",${r.category},${r.payment},${r.amount},${r.isBalance?'TRUE':'FALSE'},"${r.memo||''}"`
+  );
+  const blob = new Blob([header + '\n' + rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${currentMonth}.csv`;
+  a.click();
 }
 
 // ── 유틸 ──
