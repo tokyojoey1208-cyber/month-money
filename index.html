@@ -836,20 +836,21 @@ async function importCsv() {
   const btn = event.target;
   btn.textContent = '저장 중...';
   btn.disabled = true;
+
+  // payload URL 길이 제한 때문에 10건씩 나눠서 전송
+  const CHUNK = 10;
   try {
-    const res = await apiPost({action:'bulkAdd', month:currentMonth, entries:parsedCsv});
-    if (res && res.ok) {
-      closeModal('csvOverlay');
-      parsedCsv = [];
-      await loadMonth(currentMonth);
-    } else {
-      const msg = res && res.error ? res.error : '알 수 없는 오류';
-      alert(`저장 실패: ${msg}\n\nGAS 재배포가 필요하거나 연결이 끊겼어요.\n일단 CSV 다운로드로 구글 시트에 직접 붙여넣기 가능합니다.`);
-      btn.textContent = '저장';
-      btn.disabled = false;
+    for (let i = 0; i < parsedCsv.length; i += CHUNK) {
+      const chunk = parsedCsv.slice(i, i + CHUNK);
+      btn.textContent = `저장 중... ${Math.min(i+CHUNK, parsedCsv.length)}/${parsedCsv.length}건`;
+      const res = await apiPost({action:'bulkAdd', month:currentMonth, entries:chunk});
+      if (!res || res.error) throw new Error(res ? res.error : '응답 없음');
     }
+    closeModal('csvOverlay');
+    parsedCsv = [];
+    await loadMonth(currentMonth);
   } catch(e) {
-    alert(`연결 오류: ${e.message}\n\nGAS URL을 확인하거나 재배포가 필요해요.\n아래 CSV 다운로드로 구글 시트에 직접 넣을 수 있어요.`);
+    alert(`저장 실패: ${e.message}\n\nCSV 다운로드로 구글 시트에 직접 붙여넣기 가능합니다.`);
     btn.textContent = '저장';
     btn.disabled = false;
   }
