@@ -321,7 +321,8 @@ select option { background: var(--surface); }
       <div class="card-type-tab active" onclick="setCsvType('paypay',this)">PayPay</div>
       <div class="card-type-tab" onclick="setCsvType('rakuten',this)">라쿠텐</div>
       <div class="card-type-tab" onclick="setCsvType('paidy',this)">페이디</div>
-      <div class="card-type-tab" onclick="setCsvType('manual',this)">직접 붙여넣기</div>
+      <div class="card-type-tab" onclick="setCsvType('custom',this)">가계부CSV</div>
+      <div class="card-type-tab" onclick="setCsvType('manual',this)">직접입력</div>
     </div>
 
     <!-- 파일 드롭 (PayPay/라쿠텐/페이디) -->
@@ -361,7 +362,7 @@ select option { background: var(--surface); }
 
 <script>
 // ── 상수 ──
-const GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycby57YsNkFZfvimF30_t3LVhNtSJRTE1o4JLJfsyVF1ryZeY5VuudOHwmIUVL8QSyo07/exec';
+const GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycbyYcIzeN-7BVlQx7jm9qhK8Cp3BM8wWw-_uUJIJ8ldKU7seZUC71WVDzSCf9gOZ9zE/exec';
 const CATEGORIES = ['가계쇼핑','외식비','술자리','고정비','세금','병원','기타'];
 const FIXED_CATS = ['고정비','세금']; // 예산 바에서 변동비 제외 항목
 const CAT_COLORS = {'가계쇼핑':'#0a9e7a','외식비':'#d4860a','술자리':'#c4294a','고정비':'#2563b0','세금':'#1a7a5e','병원':'#2a8a2a','기타':'#888'};
@@ -631,8 +632,13 @@ function setCsvType(type, el) {
   } else {
     document.getElementById('csvFileArea').style.display = 'block';
     document.getElementById('manualArea').style.display = 'none';
-    const labels = {paypay:'PayPay CSV 파일 클릭 또는 드래그', rakuten:'라쿠텐카드 CSV 파일 클릭 또는 드래그', paidy:'페이디 CSV 파일 클릭 또는 드래그'};
-    document.getElementById('csvDropText').textContent = labels[type];
+    const labels = {
+      paypay: 'PayPay CSV 파일 클릭 또는 드래그',
+      rakuten: '라쿠텐카드 CSV 파일 클릭 또는 드래그',
+      paidy: '페이디 CSV 파일 클릭 또는 드래그',
+      custom: '가계부 내보낸 CSV 파일 클릭 또는 드래그 (2026-04.csv 등)'
+    };
+    document.getElementById('csvDropText').textContent = labels[type] || '';
   }
 }
 
@@ -704,6 +710,7 @@ function parseCsvFile(file) {
     if (csvType==='paypay') parsePayPay(e.target.result);
     else if (csvType==='rakuten') parseRakuten(e.target.result);
     else if (csvType==='paidy') parsePaidy(e.target.result);
+    else if (csvType==='custom') parseCustom(e.target.result);
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -781,6 +788,32 @@ function parsePaidy(text) {
     parsedCsv.push({date, item:name, category:guessCat(name), payment:'페이디카드', amount:amt, isBalance:false, memo:''});
   }
   showCsvPreview('페이디카드');
+}
+
+// 가계부 자체 CSV 파서 (ID,날짜,항목,카테고리,결제수단,금액,잔고여부,메모)
+function parseCustom(text) {
+  parsedCsv = [];
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if (lines.length < 2) return;
+  const headers = parseLine(lines[0]).map(clean);
+  for (let i=1; i<lines.length; i++) {
+    const cols = parseLine(lines[i]).map(clean);
+    if (cols.length < 6) continue;
+    const row = {};
+    headers.forEach((h,j) => row[h] = cols[j]||'');
+    const amt = parseInt((row['금액']||'0').replace(/,/g,''));
+    if (!amt) continue;
+    parsedCsv.push({
+      date: row['날짜']||'',
+      item: row['항목']||'',
+      category: row['카테고리']||'기타',
+      payment: row['결제수단']||'PayPay카드',
+      amount: amt,
+      isBalance: row['잔고여부']==='TRUE'||row['잔고여부']==='true',
+      memo: row['메모']||''
+    });
+  }
+  showCsvPreview('가계부CSV');
 }
 
 function showCsvPreview(cardName) {
