@@ -554,7 +554,7 @@ function renderTable() {
       <td><span class="cat-dot" style="background:${CAT_COLORS[r.category]||'#888'}"></span>${r.category}</td>
       <td><span class="badge ${PAY_BADGE[r.payment]||'b-cash'}">${r.payment}</span></td>
       <td class="num${r.isBalance?' muted-text':''}">${fmt(r.amount)}</td>
-      <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick='editEntry(${JSON.stringify(r)})'>편집</button></td>
+      <td style="text-align:right;display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-ghost btn-sm" onclick='editEntry(${JSON.stringify(r)})'>편집</button><button class="btn btn-sm" style="background:rgba(214,48,48,.08);color:#d63030;border:.5px solid rgba(214,48,48,.2)" onclick='deleteEntry(${r._rowIndex})'>삭제</button></td>
     </tr>`).join('');
 
   const total = rows.filter(isCardCharge).reduce((s,r)=>s+r.amount,0);
@@ -595,6 +595,19 @@ function openAddModal() {
   document.getElementById('fMemo').value = '';
   document.getElementById('fIsBalance').checked = false;
   openModal('addOverlay');
+}
+async function deleteEntry(rowIndex) {
+  if (!confirm('이 항목을 삭제할까요?')) return;
+  try {
+    const res = await apiPost({action:'deleteEntry', month:currentMonth, rowIndex});
+    if (res && res.ok) {
+      await loadMonth(currentMonth);
+    } else {
+      alert('삭제 실패: ' + (res && res.error ? res.error : '알 수 없는 오류'));
+    }
+  } catch(e) {
+    alert('삭제 오류: ' + e.message);
+  }
 }
 function editEntry(row) {
   document.getElementById('modalTitle').textContent = '내역 편집';
