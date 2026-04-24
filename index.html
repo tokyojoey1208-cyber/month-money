@@ -7,25 +7,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root {
-  --bg: #f5f4f0;
-  --surface: #ffffff;
-  --surface2: #f0efe9;
-  --border: rgba(0,0,0,.08);
-  --border2: rgba(0,0,0,.13);
-  --text: #1a1a1a;
-  --muted: #888;
-  --pp: #1a6fd4;
-  --rk: #c94f1a;
-  --pa: #6b3ecf;
-  --red: #d63030;
-  --radius: 10px;
-  --font: 'DM Sans', 'Noto Sans KR', sans-serif;
+  --bg: #f5f4f0; --surface: #ffffff; --surface2: #f0efe9;
+  --border: rgba(0,0,0,.08); --border2: rgba(0,0,0,.13);
+  --text: #1a1a1a; --muted: #888;
+  --pp: #1a6fd4; --rk: #c94f1a; --pa: #6b3ecf; --red: #d63030;
+  --radius: 10px; --font: 'DM Sans', 'Noto Sans KR', sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap');
 
-.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 80px; }
+.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 100px; }
 header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .logo { font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
 .logo span { color: var(--muted); font-weight: 300; font-size: 13px; margin-left: 8px; }
@@ -37,6 +29,15 @@ button { cursor: pointer; border: none; outline: none; font-family: var(--font);
 .btn-primary { background: var(--text); color: var(--bg); }
 .btn-ghost { background: var(--surface2); color: var(--text); border: .5px solid var(--border2); }
 .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+
+/* ── FAB ── */
+.fab { position: fixed; bottom: 24px; right: 24px; z-index: 90; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.fab-main { width: 54px; height: 54px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 26px; font-weight: 300; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 18px rgba(0,0,0,.22); transition: transform .15s; cursor: pointer; border: none; }
+.fab-main:hover { transform: scale(1.07); }
+.fab-sub { display: flex; align-items: center; gap: 10px; opacity: 0; pointer-events: none; transition: opacity .15s; }
+.fab-sub.visible { opacity: 1; pointer-events: all; }
+.fab-sub-label { font-size: 12px; font-weight: 500; background: var(--surface); border: .5px solid var(--border2); border-radius: 20px; padding: 5px 12px; box-shadow: 0 2px 8px rgba(0,0,0,.1); white-space: nowrap; }
+.fab-sub-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); border: .5px solid var(--border2); color: var(--text); font-size: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.1); cursor: pointer; }
 
 .config-bar { background: var(--surface); border: .5px solid var(--border2); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
 .config-bar input { flex: 1; background: var(--surface2); border: .5px solid var(--border); border-radius: 6px; padding: 6px 10px; color: var(--text); font-size: 12px; font-family: monospace; }
@@ -50,14 +51,12 @@ button { cursor: pointer; border: none; outline: none; font-family: var(--font);
 .month-tab.active { background: var(--text); color: var(--bg); border-color: transparent; }
 .month-tab-add { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: .5px solid var(--border2); background: var(--surface); color: var(--muted); cursor: pointer; }
 
-/* 예산 영역 */
 .budget-section { background: var(--surface); border: .5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
 .budget-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .budget-label { font-size: 12px; color: var(--muted); }
 .budget-edit { display: flex; align-items: center; gap: 6px; }
 .budget-edit input { width: 90px; background: var(--surface2); border: .5px solid var(--border2); border-radius: 6px; padding: 4px 8px; font-size: 13px; color: var(--text); font-family: var(--font); text-align: right; }
 .budget-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.bar-wrap { }
 .bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
 .bar-label strong { color: var(--text); font-weight: 500; }
 .budget-bar { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
@@ -98,15 +97,19 @@ tr:hover td { background: var(--surface2); }
 .b-bl { background: rgba(0,0,0,.06); color: var(--muted); }
 .b-cash { background: rgba(0,0,0,.06); color: var(--muted); }
 .cat-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
-
 .empty { text-align: center; padding: 40px; color: var(--muted); }
 
-/* 모달 */
+/* ── 모달 공통 ── */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .overlay.open { opacity: 1; pointer-events: all; }
-.modal { background: var(--surface); border-radius: 16px 16px 0 0; border: .5px solid var(--border2); padding: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; transform: translateY(40px); transition: transform .25s; }
+.modal { background: var(--surface); border-radius: 16px 16px 0 0; border: .5px solid var(--border2); padding: 20px; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; transform: translateY(40px); transition: transform .25s; }
 .overlay.open .modal { transform: translateY(0); }
-.modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+.modal-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+
+/* ── 입력모드 탭 ── */
+.mode-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.mode-tab { padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: .5px solid var(--border2); background: var(--surface2); color: var(--muted); transition: all .15s; }
+.mode-tab.active { background: var(--text); color: var(--bg); border-color: transparent; }
 
 .form-group { margin-bottom: 13px; }
 label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
@@ -128,14 +131,25 @@ select option { background: var(--surface); }
 .toggle input:checked + .toggle-slider:before { transform: translateX(16px); background: #fff; }
 .toggle-label { font-size: 12px; color: var(--muted); }
 
+/* ── 다중입력 ── */
+.multi-list { display: flex; flex-direction: column; gap: 8px; max-height: 48vh; overflow-y: auto; margin-bottom: 10px; padding-right: 2px; }
+.multi-item { background: var(--surface2); border: .5px solid var(--border2); border-radius: 10px; padding: 10px 12px; }
+.multi-item-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.multi-item-num { font-size: 11px; color: var(--muted); font-weight: 500; }
+.multi-item .form-row { gap: 7px; }
+.multi-item .form-group { margin-bottom: 7px; }
+.multi-item .form-group:last-child { margin-bottom: 0; }
+.multi-item input, .multi-item select { padding: 7px 9px; font-size: 13px; }
+.multi-item label { font-size: 10px; }
+.add-row-btn { width: 100%; padding: 9px; border-radius: 8px; border: 1.5px dashed var(--border2); background: transparent; color: var(--muted); font-size: 13px; cursor: pointer; transition: all .15s; margin-bottom: 2px; font-family: var(--font); }
+.add-row-btn:hover { border-color: var(--text); color: var(--text); }
+
+/* ── CSV ── */
 .csv-drop { border: 1.5px dashed var(--border2); border-radius: 10px; padding: 28px; text-align: center; color: var(--muted); margin-bottom: 12px; cursor: pointer; transition: border-color .15s; }
 .csv-drop:hover, .csv-drop.drag { border-color: var(--pp); color: var(--pp); }
-
-/* CSV 카드 타입 선택 */
-.card-type-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.card-type-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 .card-type-tab { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: .5px solid var(--border2); background: var(--surface2); color: var(--muted); transition: all .15s; }
 .card-type-tab.active { background: var(--text); color: var(--bg); border-color: transparent; }
-
 .csv-preview-list { max-height: 220px; overflow-y: auto; margin-bottom: 12px; }
 .csv-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: .5px solid var(--border); gap: 8px; }
 .csv-row:last-child { border-bottom: none; }
@@ -148,6 +162,7 @@ select option { background: var(--surface); }
   .summary-grid { grid-template-columns: 1fr 1fr; }
   .budget-bars { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
+  .fab-main { width: 48px; height: 48px; font-size: 22px; }
 }
 </style>
 </head>
@@ -158,21 +173,18 @@ select option { background: var(--surface); }
   <div class="logo">가계부<span>家計簿</span></div>
   <div class="header-actions">
     <button class="btn btn-ghost btn-sm" onclick="openCsvModal()">CSV 가져오기</button>
-    <button class="btn btn-primary" onclick="openAddModal()">+ 입력</button>
+    <button class="btn btn-primary" onclick="openAddModal('single')">+ 입력</button>
   </div>
 </header>
 
-<!-- GAS 연결 -->
 <div class="config-bar">
   <div class="status-dot" id="statusDot"></div>
   <input type="text" id="gasUrl" placeholder="GAS Web App URL" />
   <button class="btn btn-ghost btn-sm" onclick="saveConfig()">연결</button>
 </div>
 
-<!-- 월 탭 -->
 <div class="month-nav" id="monthNav"></div>
 
-<!-- 예산 설정 -->
 <div class="budget-section">
   <div class="budget-row">
     <span class="budget-label">변동비 예산 (고정비 제외)</span>
@@ -193,7 +205,6 @@ select option { background: var(--surface); }
   </div>
 </div>
 
-<!-- 요약 카드 -->
 <div class="summary-grid">
   <div class="s-card"><div class="s-label">PayPay카드</div><div class="s-val c-pp" id="sumPP">0</div><div class="s-sub">엔</div></div>
   <div class="s-card"><div class="s-label">라쿠텐카드</div><div class="s-val c-rk" id="sumRK">0</div><div class="s-sub">엔</div></div>
@@ -201,16 +212,14 @@ select option { background: var(--surface); }
   <div class="s-card"><div class="s-label">총 청구 예정</div><div class="s-val" id="sumTotal">0</div><div class="s-sub" id="subBalance">잔고 0엔 별도</div></div>
 </div>
 
-<!-- 차트 -->
 <div class="section">
   <div class="section-header"><span class="section-title">카테고리별</span></div>
   <div class="chart-wrap">
     <div class="chart-legend" id="chartLegend"></div>
-    <div style="position:relative;height:170px"><canvas id="catChart" role="img" aria-label="카테고리별 지출">카테고리별 지출</canvas></div>
+    <div style="position:relative;height:170px"><canvas id="catChart"></canvas></div>
   </div>
 </div>
 
-<!-- 내역 테이블 -->
 <div class="section">
   <div class="section-header">
     <span class="section-title">전체 내역</span>
@@ -246,7 +255,7 @@ select option { background: var(--surface); }
         <th style="width:76px">카테고리</th>
         <th style="width:88px">결제</th>
         <th class="num" style="width:76px">금액</th>
-        <th style="width:56px"></th>
+        <th style="width:80px"></th>
       </tr></thead>
       <tbody id="txBody"></tbody>
       <tfoot id="txFoot"></tfoot>
@@ -254,72 +263,91 @@ select option { background: var(--surface); }
   </div>
 </div>
 
+</div><!-- /app -->
+
+<!-- ── FAB ── -->
+<div class="fab" id="fab">
+  <div class="fab-sub" id="fabSub">
+    <span class="fab-sub-label">다중입력</span>
+    <button class="fab-sub-btn" onclick="openAddModal('multi'); toggleFab(false)" title="다중입력">≡</button>
+    <span class="fab-sub-label">1건입력</span>
+    <button class="fab-sub-btn" onclick="openAddModal('single'); toggleFab(false)" title="1건입력">＋</button>
+  </div>
+  <button class="fab-main" id="fabMain" onclick="toggleFab()">＋</button>
 </div>
 
-<!-- 입력 모달 -->
+<!-- ── 입력/편집 모달 ── -->
 <div class="overlay" id="addOverlay" onclick="closeOnBg(event,'addOverlay')">
   <div class="modal">
     <div class="modal-title" id="modalTitle">지출 입력</div>
-    <input type="hidden" id="editRowIndex">
-    <div class="form-row">
+
+    <!-- 모드 탭 (편집 시 숨김) -->
+    <div class="mode-tabs" id="modeTabs">
+      <div class="mode-tab active" id="modeTabSingle" onclick="switchMode('single')">1건</div>
+      <div class="mode-tab" id="modeTabMulti" onclick="switchMode('multi')">다중입력</div>
+    </div>
+
+    <!-- ── 단건 입력 ── -->
+    <div id="singleArea">
+      <input type="hidden" id="editRowIndex">
+      <div class="form-row">
+        <div class="form-group"><label>날짜</label><input type="date" id="fDate"></div>
+        <div class="form-group"><label>금액 (엔)</label><input type="number" id="fAmount" placeholder="0" min="0"></div>
+      </div>
+      <div class="form-group"><label>항목</label><input type="text" id="fItem" placeholder="어디서 뭘"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>카테고리</label>
+          <select id="fCategory">
+            <option value="가계쇼핑">가계쇼핑 (장보기·생필품)</option>
+            <option value="취미·사치쇼핑">취미·사치쇼핑</option>
+            <option value="외식비">외식비 (밥)</option>
+            <option value="간식비">간식비 (커피·콜라·군것질)</option>
+            <option value="술자리">술자리</option>
+            <option value="고정비">고정비 (야칭·통신·관리비)</option>
+            <option value="세금">세금 (주민세 등)</option>
+            <option value="병원">병원</option>
+            <option value="교통비">교통비</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>결제수단</label>
+          <select id="fPayment" onchange="onPaymentChange()">
+            <option value="PayPay카드">PayPay카드</option>
+            <option value="PayPay잔고">PayPay잔고</option>
+            <option value="라쿠텐카드">라쿠텐카드</option>
+            <option value="페이디카드">페이디카드</option>
+            <option value="현금">현금</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>메모 (선택)</label><input type="text" id="fMemo" placeholder=""></div>
       <div class="form-group">
-        <label>날짜</label>
-        <input type="date" id="fDate">
+        <div class="toggle-wrap">
+          <label class="toggle"><input type="checkbox" id="fIsBalance"><span class="toggle-slider"></span></label>
+          <span class="toggle-label">잔고 사용 (카드 청구 제외)</span>
+        </div>
       </div>
-      <div class="form-group">
-        <label>금액 (엔)</label>
-        <input type="number" id="fAmount" placeholder="0" min="0">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>항목</label>
-      <input type="text" id="fItem" placeholder="어디서 뭘">
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>카테고리</label>
-        <select id="fCategory">
-          <option value="가계쇼핑">가계쇼핑 (장보기·생필품)</option>
-          <option value="취미·사치쇼핑">취미·사치쇼핑</option>
-          <option value="외식비">외식비 (밥)</option>
-          <option value="간식비">간식비 (커피·콜라·군것질)</option>
-          <option value="술자리">술자리</option>
-          <option value="고정비">고정비 (야칭·통신·관리비)</option>
-          <option value="세금">세금 (주민세 등)</option>
-          <option value="병원">병원</option>
-          <option value="교통비">교통비</option>
-          <option value="기타">기타</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>결제수단</label>
-        <select id="fPayment" onchange="onPaymentChange()">
-          <option value="PayPay카드">PayPay카드</option>
-          <option value="PayPay잔고">PayPay잔고</option>
-          <option value="라쿠텐카드">라쿠텐카드</option>
-          <option value="페이디카드">페이디카드</option>
-          <option value="현금">현금</option>
-        </select>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="closeModal('addOverlay')">취소</button>
+        <button class="btn btn-primary" onclick="submitEntry()">저장</button>
       </div>
     </div>
-    <div class="form-group">
-      <label>메모 (선택)</label>
-      <input type="text" id="fMemo" placeholder="">
-    </div>
-    <div class="form-group">
-      <div class="toggle-wrap">
-        <label class="toggle"><input type="checkbox" id="fIsBalance"><span class="toggle-slider"></span></label>
-        <span class="toggle-label">잔고 사용 (카드 청구 제외)</span>
+
+    <!-- ── 다중 입력 ── -->
+    <div id="multiArea" style="display:none">
+      <div id="multiList" class="multi-list"></div>
+      <button class="add-row-btn" onclick="addMultiRow()">＋ 항목 추가</button>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="closeModal('addOverlay')">취소</button>
+        <button class="btn btn-primary" id="multiSaveBtn" onclick="submitMulti()">전체 저장</button>
       </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-ghost" onclick="closeModal('addOverlay')">취소</button>
-      <button class="btn btn-primary" onclick="submitEntry()">저장</button>
     </div>
   </div>
 </div>
 
-<!-- CSV 모달 -->
+<!-- ── CSV 모달 ── -->
 <div class="overlay" id="csvOverlay" onclick="closeOnBg(event,'csvOverlay')">
   <div class="modal">
     <div class="modal-title">내역 가져오기</div>
@@ -330,8 +358,6 @@ select option { background: var(--surface); }
       <div class="card-type-tab" onclick="setCsvType('custom',this)">가계부CSV</div>
       <div class="card-type-tab" onclick="setCsvType('manual',this)">직접입력</div>
     </div>
-
-    <!-- 파일 드롭 (PayPay/라쿠텐/페이디) -->
     <div id="csvFileArea">
       <div class="csv-drop" id="csvDrop" onclick="document.getElementById('csvFileInput').click()">
         <div style="font-size:22px;margin-bottom:6px">↑</div>
@@ -340,20 +366,15 @@ select option { background: var(--surface); }
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCsvFile(event)">
     </div>
-
-    <!-- 직접 붙여넣기 영역 -->
     <div id="manualArea" style="display:none">
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6">
-        아래 형식으로 한 줄씩 붙여넣기:<br>
+        아래 형식으로 한 줄씩:<br>
         <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:11px">4/1 미소라멘 1250 PayPay잔고</code><br>
-        <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:11px">4/1 산야 이자카야 4780 라쿠텐카드</code><br>
         <span style="font-size:11px">결제수단: PayPay카드 / PayPay잔고 / 라쿠텐카드 / 페이디카드 / 현금</span>
       </div>
-      <textarea id="manualText" rows="8" placeholder="4/1 미소라멘 점심 1250 PayPay잔고&#10;4/1 산야 이자카야 4780 라쿠텐카드&#10;4/3 어나더에잇 2700 PayPay카드" style="font-family:monospace;font-size:12px;resize:vertical"></textarea>
+      <textarea id="manualText" rows="8" placeholder="4/1 미소라멘 점심 1250 PayPay잔고" style="font-family:monospace;font-size:12px;resize:vertical"></textarea>
       <button class="btn btn-ghost" style="width:100%;margin-top:8px;justify-content:center" onclick="parseManual()">파싱하기</button>
     </div>
-
-    <!-- 파싱 결과 프리뷰 (공통) -->
     <div id="csvPreview" style="display:none;margin-top:12px">
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px" id="csvCount"></div>
       <div class="csv-preview-list" id="csvRows"></div>
@@ -361,62 +382,50 @@ select option { background: var(--surface); }
         <button class="btn btn-ghost" onclick="downloadCsv()">CSV 다운로드</button>
         <button class="btn btn-primary" onclick="importCsv()">저장</button>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px">저장이 안 되면 CSV 다운로드 → 구글 시트에 직접 붙여넣기</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">저장 안 되면 CSV 다운로드 → 구글 시트 직접 붙여넣기</div>
     </div>
   </div>
 </div>
 
 <script>
-// ── 상수 ──
 const GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycbwYwrj4EUYM-nUkMcoB9Wjn3gevhXCCg66EKTxrN4cQ2aJ684IWZUyi0bhfg2c0ftny/exec';
 const CATEGORIES = ['가계쇼핑','취미·사치쇼핑','외식비','간식비','술자리','고정비','세금','병원','교통비','기타'];
 const FIXED_CATS = ['고정비','세금'];
-const CAT_COLORS = {
-  '가계쇼핑':    '#0a9e7a',
-  '취미·사치쇼핑':'#7c3aed',
-  '외식비':      '#d4860a',
-  '간식비':      '#e07b39',
-  '술자리':      '#c4294a',
-  '고정비':      '#2563b0',
-  '세금':        '#1a7a5e',
-  '병원':        '#2a8a2a',
-  '교통비':      '#0891b2',
-  '기타':        '#888'
-};
+const CAT_COLORS = {'가계쇼핑':'#0a9e7a','취미·사치쇼핑':'#7c3aed','외식비':'#d4860a','간식비':'#e07b39','술자리':'#c4294a','고정비':'#2563b0','세금':'#1a7a5e','병원':'#2a8a2a','교통비':'#0891b2','기타':'#888'};
 const PAY_BADGE = {'PayPay카드':'b-pp','라쿠텐카드':'b-rk','페이디카드':'b-pa','PayPay잔고':'b-bl','현금':'b-cash'};
 const CARD_PAYMENTS = ['PayPay카드','라쿠텐카드','페이디카드','현금'];
+const CAT_OPTIONS = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+const PAY_OPTIONS = `<option value="PayPay카드">PayPay카드</option><option value="PayPay잔고">PayPay잔고</option><option value="라쿠텐카드">라쿠텐카드</option><option value="페이디카드">페이디카드</option><option value="현금">현금</option>`;
 
 let gasUrl = localStorage.getItem('gasUrl') || GAS_DEFAULT;
 let budget = Number(localStorage.getItem('budget') || 100000);
 let currentMonth = fmtMonth(new Date());
-let allRows = [];
-let catChart = null;
-let parsedCsv = [];
-let csvType = 'paypay';
+let allRows = [], catChart = null, parsedCsv = [], csvType = 'paypay';
+let fabOpen = false;
 
-// ── 초기화 ──
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('gasUrl').value = gasUrl;
   document.getElementById('budgetInput').value = budget;
-  buildMonthTabs();
-  verifyConnection();
-  setupDrag();
+  buildMonthTabs(); verifyConnection(); setupDrag();
 });
 
 function fmtMonth(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
 function fmt(n) { return Math.round(Number(n)).toLocaleString('ja-JP'); }
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+// ── FAB ──
+function toggleFab(force) {
+  fabOpen = force !== undefined ? force : !fabOpen;
+  document.getElementById('fabSub').classList.toggle('visible', fabOpen);
+  document.getElementById('fabMain').textContent = fabOpen ? '✕' : '＋';
+}
+document.addEventListener('click', e => {
+  if (fabOpen && !document.getElementById('fab').contains(e.target)) toggleFab(false);
+});
 
 // ── 설정 ──
-function saveConfig() {
-  gasUrl = document.getElementById('gasUrl').value.trim();
-  localStorage.setItem('gasUrl', gasUrl);
-  verifyConnection();
-}
-function saveBudget() {
-  budget = Number(document.getElementById('budgetInput').value) || 100000;
-  localStorage.setItem('budget', budget);
-  updateSummary();
-}
+function saveConfig() { gasUrl = document.getElementById('gasUrl').value.trim(); localStorage.setItem('gasUrl', gasUrl); verifyConnection(); }
+function saveBudget() { budget = Number(document.getElementById('budgetInput').value) || 100000; localStorage.setItem('budget', budget); updateSummary(); }
 
 async function verifyConnection() {
   const dot = document.getElementById('statusDot');
@@ -426,113 +435,82 @@ async function verifyConnection() {
     if (res.error) throw new Error(res.error);
     dot.className = 'status-dot ok';
     refreshMonthTabs(res.months || []);
-  } catch(e) {
-    dot.className = 'status-dot err';
-  }
-  buildMonthTabs();
-  loadMonth(currentMonth);
+  } catch(e) { dot.className = 'status-dot err'; }
+  buildMonthTabs(); loadMonth(currentMonth);
 }
 
-// ── API ──
 async function apiGet(action, params={}) {
   const qs = new URLSearchParams({action, ...params}).toString();
   const res = await fetch(`${gasUrl}?${qs}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
-// GAS POST는 CORS 미지원 → payload를 GET으로 전송
 async function apiPost(body) {
   if (!gasUrl) { alert('GAS URL을 연결해주세요.'); return null; }
-  const payload = encodeURIComponent(JSON.stringify(body));
-  const res = await fetch(`${gasUrl}?payload=${payload}`);
+  const res = await fetch(`${gasUrl}?payload=${encodeURIComponent(JSON.stringify(body))}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
 // ── 월 탭 ──
 function fmtMonths() {
-  const d = new Date();
-  const months = [];
-  for (let i = -2; i <= 4; i++) {
-    months.push(fmtMonth(new Date(d.getFullYear(), d.getMonth()+i, 1)));
-  }
+  const d = new Date(), months = [];
+  for (let i=-2; i<=4; i++) months.push(fmtMonth(new Date(d.getFullYear(), d.getMonth()+i, 1)));
   return [...new Set([currentMonth, ...months])].sort().reverse();
 }
 function buildMonthTabs() { renderMonthTabs(fmtMonths()); }
-function refreshMonthTabs(remote) {
-  const merged = [...new Set([...fmtMonths(), ...remote])].sort().reverse();
-  renderMonthTabs(merged);
-}
+function refreshMonthTabs(remote) { renderMonthTabs([...new Set([...fmtMonths(), ...remote])].sort().reverse()); }
 function renderMonthTabs(months) {
   document.getElementById('monthNav').innerHTML =
     months.map(m => `<div class="month-tab${m===currentMonth?' active':''}" onclick="switchMonth('${m}')">${m}</div>`).join('') +
     `<div class="month-tab-add" onclick="addNewMonth()">+</div>`;
 }
-function switchMonth(m) {
-  currentMonth = m;
-  document.querySelectorAll('.month-tab').forEach(t => t.classList.toggle('active', t.textContent===m));
-  loadMonth(m);
-}
-function addNewMonth() {
-  const m = prompt('월 입력 (예: 2026-05)', fmtMonth(new Date()));
-  if (m && /^\d{4}-\d{2}$/.test(m)) { currentMonth = m; refreshMonthTabs([m]); loadMonth(m); }
-}
+function switchMonth(m) { currentMonth = m; document.querySelectorAll('.month-tab').forEach(t=>t.classList.toggle('active',t.textContent===m)); loadMonth(m); }
+function addNewMonth() { const m = prompt('월 입력 (예: 2026-05)', fmtMonth(new Date())); if (m && /^\d{4}-\d{2}$/.test(m)) { currentMonth=m; refreshMonthTabs([m]); loadMonth(m); } }
 
 // ── 데이터 로드 ──
 async function loadMonth(month) {
   try {
     const data = await apiGet('getMonth', {month});
     allRows = (data.rows||[]).map(r => ({
-      date: r['날짜'], item: r['항목'], category: r['카테고리'],
-      payment: r['결제수단'], amount: Number(r['금액']),
-      isBalance: r['잔고여부']===true||r['잔고여부']==='TRUE',
-      memo: r['메모']||'', _rowIndex: r._rowIndex
+      date:r['날짜'], item:r['항목'], category:r['카테고리'], payment:r['결제수단'],
+      amount:Number(r['금액']), isBalance:r['잔고여부']===true||r['잔고여부']==='TRUE',
+      memo:r['메모']||'', _rowIndex:r._rowIndex
     }));
   } catch(e) { allRows = []; }
   render();
 }
 
-// ── 렌더 ──
 function render() { updateSummary(); renderTable(); renderChart(); }
-
 function isCardCharge(r) { return !r.isBalance && CARD_PAYMENTS.includes(r.payment); }
 function isFixed(r) { return FIXED_CATS.includes(r.category); }
 
 function updateSummary() {
   const charged = allRows.filter(isCardCharge);
-  const pp  = charged.filter(r=>r.payment==='PayPay카드').reduce((s,r)=>s+r.amount,0);
-  const rk  = charged.filter(r=>r.payment==='라쿠텐카드').reduce((s,r)=>s+r.amount,0);
-  const pa  = charged.filter(r=>r.payment==='페이디카드').reduce((s,r)=>s+r.amount,0);
+  const pp = charged.filter(r=>r.payment==='PayPay카드').reduce((s,r)=>s+r.amount,0);
+  const rk = charged.filter(r=>r.payment==='라쿠텐카드').reduce((s,r)=>s+r.amount,0);
+  const pa = charged.filter(r=>r.payment==='페이디카드').reduce((s,r)=>s+r.amount,0);
   const total = charged.reduce((s,r)=>s+r.amount,0);
   const balTotal = allRows.filter(r=>r.isBalance||r.payment==='PayPay잔고').reduce((s,r)=>s+r.amount,0);
-
-  // 변동비 = 카드청구 중 고정비·세금 제외
   const varSpent = charged.filter(r=>!isFixed(r)).reduce((s,r)=>s+r.amount,0);
   const fixedSpent = charged.filter(r=>isFixed(r)).reduce((s,r)=>s+r.amount,0);
-
   document.getElementById('sumPP').textContent = fmt(pp);
   document.getElementById('sumRK').textContent = fmt(rk);
   document.getElementById('sumPA').textContent = fmt(pa);
   document.getElementById('sumTotal').textContent = fmt(total) + '엔';
   document.getElementById('subBalance').textContent = '잔고 ' + fmt(balTotal) + '엔 별도';
-
-  // 변동비 바
   const varPct = Math.min((varSpent/budget)*100, 100);
   const vf = document.getElementById('varFill');
   vf.style.width = varPct + '%';
   vf.className = 'budget-fill' + (varPct>=100?' over':varPct>=75?' warn':'');
-  const daysLeft = Math.max(1, daysLeftInMonth());
   const remain = budget - varSpent;
+  const daysLeft = Math.max(1, daysLeftInMonth());
   document.getElementById('varLabel').textContent = fmt(varSpent) + ' / ' + fmt(budget) + '엔 (일 ' + fmt(Math.max(0,remain/daysLeft)) + '엔)';
-
-  // 고정비 바 (참고용, 상한 없음)
   document.getElementById('fixedLabel').textContent = fmt(fixedSpent) + '엔';
   document.getElementById('fixedFill').style.width = fixedSpent > 0 ? Math.min((fixedSpent/150000)*100,100)+'%' : '0%';
 }
-
 function daysLeftInMonth() {
-  const now = new Date();
-  const [y,m] = currentMonth.split('-').map(Number);
+  const now = new Date(), [y,m] = currentMonth.split('-').map(Number);
   const last = new Date(y,m,0).getDate();
   return (now.getFullYear()===y && now.getMonth()+1===m) ? last-now.getDate() : last;
 }
@@ -541,11 +519,9 @@ function renderTable() {
   const cf = document.getElementById('filterCat').value;
   const pf = document.getElementById('filterCard').value;
   const rows = allRows.filter(r=>(!cf||r.category===cf)&&(!pf||r.payment===pf)).sort((a,b)=>String(a.date)<String(b.date)?-1:1);
-
   if (!rows.length) {
     document.getElementById('txBody').innerHTML = `<tr><td colspan="6"><div class="empty">내역 없음</div></td></tr>`;
-    document.getElementById('txFoot').innerHTML = '';
-    return;
+    document.getElementById('txFoot').innerHTML = ''; return;
   }
   document.getElementById('txBody').innerHTML = rows.map(r => `
     <tr>
@@ -554,24 +530,22 @@ function renderTable() {
       <td><span class="cat-dot" style="background:${CAT_COLORS[r.category]||'#888'}"></span>${r.category}</td>
       <td><span class="badge ${PAY_BADGE[r.payment]||'b-cash'}">${r.payment}</span></td>
       <td class="num${r.isBalance?' muted-text':''}">${fmt(r.amount)}</td>
-      <td style="text-align:right;display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-ghost btn-sm" onclick='editEntry(${JSON.stringify(r)})'>편집</button><button class="btn btn-sm" style="background:rgba(214,48,48,.08);color:#d63030;border:.5px solid rgba(214,48,48,.2)" onclick='deleteEntry(${r._rowIndex})'>삭제</button></td>
+      <td style="text-align:right;display:flex;gap:4px;justify-content:flex-end">
+        <button class="btn btn-ghost btn-sm" onclick='editEntry(${JSON.stringify(r)})'>편집</button>
+        <button class="btn btn-sm" style="background:rgba(214,48,48,.08);color:#d63030;border:.5px solid rgba(214,48,48,.2)" onclick='deleteEntry(${r._rowIndex})'>삭제</button>
+      </td>
     </tr>`).join('');
-
   const total = rows.filter(isCardCharge).reduce((s,r)=>s+r.amount,0);
   document.getElementById('txFoot').innerHTML = `<tr class="total-row"><td colspan="4">카드 청구 합계</td><td class="num">${fmt(total)}</td><td></td></tr>`;
 }
 
 function renderChart() {
-  const totals = {};
-  CATEGORIES.forEach(c => totals[c]=0);
-  allRows.forEach(r => { totals[r.category] = (totals[r.category]||0) + r.amount; });
+  const totals = {}; CATEGORIES.forEach(c=>totals[c]=0);
+  allRows.forEach(r=>{ totals[r.category]=(totals[r.category]||0)+r.amount; });
   const labels = CATEGORIES.filter(c=>totals[c]>0);
-  const data = labels.map(c=>totals[c]);
-  const colors = labels.map(c=>CAT_COLORS[c]);
-
-  document.getElementById('chartLegend').innerHTML = labels.map((c,i) =>
+  const data = labels.map(c=>totals[c]), colors = labels.map(c=>CAT_COLORS[c]);
+  document.getElementById('chartLegend').innerHTML = labels.map((c,i)=>
     `<div class="legend-item"><div class="legend-sq" style="background:${colors[i]}"></div>${c} ¥${fmt(totals[c])}</div>`).join('');
-
   const ctx = document.getElementById('catChart').getContext('2d');
   if (catChart) catChart.destroy();
   catChart = new Chart(ctx, {
@@ -579,15 +553,20 @@ function renderChart() {
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' ¥'+fmt(c.parsed.y)}}},
       scales:{ x:{grid:{color:'rgba(0,0,0,.05)'}, ticks:{color:'#888',font:{size:11}}},
-               y:{grid:{color:'rgba(0,0,0,.05)'}, ticks:{color:'#888',font:{size:11}, callback:v=>'¥'+fmt(v)}} } }
+               y:{grid:{color:'rgba(0,0,0,.05)'}, ticks:{color:'#888',font:{size:11},callback:v=>'¥'+fmt(v)}} } }
   });
 }
 
-// ── 입력·편집 ──
-function openAddModal() {
+// ── 입력 모달 ──
+let currentMode = 'single';
+
+function openAddModal(mode='single') {
   document.getElementById('modalTitle').textContent = '지출 입력';
+  document.getElementById('modeTabs').style.display = 'flex';
   document.getElementById('editRowIndex').value = '';
-  document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+  switchMode(mode);
+  // 단건 기본값
+  document.getElementById('fDate').value = todayStr();
   document.getElementById('fAmount').value = '';
   document.getElementById('fItem').value = '';
   document.getElementById('fCategory').value = '외식비';
@@ -596,21 +575,114 @@ function openAddModal() {
   document.getElementById('fIsBalance').checked = false;
   openModal('addOverlay');
 }
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeTabSingle').classList.toggle('active', mode==='single');
+  document.getElementById('modeTabMulti').classList.toggle('active', mode==='multi');
+  document.getElementById('singleArea').style.display = mode==='single' ? 'block' : 'none';
+  document.getElementById('multiArea').style.display = mode==='multi' ? 'block' : 'none';
+  if (mode==='multi' && document.getElementById('multiList').children.length===0) {
+    addMultiRow(); addMultiRow(); // 기본 2행
+  }
+}
+
+// 다중입력 행 추가
+let multiRowId = 0;
+function addMultiRow() {
+  const id = ++multiRowId;
+  const today = todayStr();
+  const div = document.createElement('div');
+  div.className = 'multi-item';
+  div.id = `mrow_${id}`;
+  div.innerHTML = `
+    <div class="multi-item-head">
+      <span class="multi-item-num">#${document.getElementById('multiList').children.length+1}</span>
+      <button class="btn btn-sm" style="background:rgba(214,48,48,.07);color:#d63030;padding:2px 8px;font-size:11px" onclick="removeMultiRow('mrow_${id}')">삭제</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>날짜</label><input type="date" class="mr-date" value="${today}"></div>
+      <div class="form-group"><label>금액 (엔)</label><input type="number" class="mr-amount" placeholder="0" min="0"></div>
+    </div>
+    <div class="form-group"><label>항목</label><input type="text" class="mr-item" placeholder="어디서 뭘"></div>
+    <div class="form-row">
+      <div class="form-group"><label>카테고리</label><select class="mr-cat">${CAT_OPTIONS}</select></div>
+      <div class="form-group"><label>결제수단</label><select class="mr-pay" onchange="onMultiPayChange(this)">${PAY_OPTIONS}</select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>메모</label><input type="text" class="mr-memo" placeholder=""></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px">
+        <div class="toggle-wrap">
+          <label class="toggle"><input type="checkbox" class="mr-balance"><span class="toggle-slider"></span></label>
+          <span class="toggle-label" style="font-size:11px">잔고</span>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('multiList').appendChild(div);
+  // 기본 카테고리 외식비
+  div.querySelector('.mr-cat').value = '외식비';
+}
+
+function removeMultiRow(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+  // 번호 재정렬
+  document.querySelectorAll('.multi-item-num').forEach((el,i) => el.textContent = `#${i+1}`);
+}
+
+function onMultiPayChange(sel) {
+  if (sel.value === 'PayPay잔고') sel.closest('.multi-item').querySelector('.mr-balance').checked = true;
+}
+
+async function submitMulti() {
+  const rows = [...document.getElementById('multiList').querySelectorAll('.multi-item')];
+  const entries = [];
+  for (const row of rows) {
+    const date = row.querySelector('.mr-date').value;
+    const amount = row.querySelector('.mr-amount').value;
+    const item = row.querySelector('.mr-item').value.trim();
+    if (!date || !amount || !item) continue; // 빈 행 스킵
+    entries.push({
+      date, amount: Number(amount), item,
+      category: row.querySelector('.mr-cat').value,
+      payment: row.querySelector('.mr-pay').value,
+      memo: row.querySelector('.mr-memo').value,
+      isBalance: row.querySelector('.mr-balance').checked
+    });
+  }
+  if (!entries.length) { alert('입력된 항목이 없습니다.'); return; }
+  const btn = document.getElementById('multiSaveBtn');
+  btn.textContent = '저장 중...'; btn.disabled = true;
+  const CHUNK = 10;
+  try {
+    for (let i=0; i<entries.length; i+=CHUNK) {
+      btn.textContent = `저장 중... ${Math.min(i+CHUNK,entries.length)}/${entries.length}건`;
+      const res = await apiPost({action:'bulkAdd', month:currentMonth, entries:entries.slice(i,i+CHUNK)});
+      if (!res||res.error) throw new Error(res?res.error:'응답 없음');
+    }
+    closeModal('addOverlay');
+    document.getElementById('multiList').innerHTML = '';
+    multiRowId = 0;
+    await loadMonth(currentMonth);
+  } catch(e) {
+    alert('저장 실패: ' + e.message);
+  } finally { btn.textContent = '전체 저장'; btn.disabled = false; }
+}
+
+// ── 단건 입력/편집 ──
 async function deleteEntry(rowIndex) {
   if (!confirm('이 항목을 삭제할까요?')) return;
   try {
     const res = await apiPost({action:'deleteEntry', month:currentMonth, rowIndex});
-    if (res && res.ok) {
-      await loadMonth(currentMonth);
-    } else {
-      alert('삭제 실패: ' + (res && res.error ? res.error : '알 수 없는 오류'));
-    }
-  } catch(e) {
-    alert('삭제 오류: ' + e.message);
-  }
+    if (res&&res.ok) await loadMonth(currentMonth);
+    else alert('삭제 실패: ' + (res&&res.error?res.error:'오류'));
+  } catch(e) { alert('삭제 오류: ' + e.message); }
 }
 function editEntry(row) {
   document.getElementById('modalTitle').textContent = '내역 편집';
+  document.getElementById('modeTabs').style.display = 'none';
+  document.getElementById('singleArea').style.display = 'block';
+  document.getElementById('multiArea').style.display = 'none';
   document.getElementById('editRowIndex').value = row._rowIndex;
   document.getElementById('fDate').value = String(row.date).slice(0,10);
   document.getElementById('fAmount').value = row.amount;
@@ -622,7 +694,7 @@ function editEntry(row) {
   openModal('addOverlay');
 }
 function onPaymentChange() {
-  if (document.getElementById('fPayment').value === 'PayPay잔고') document.getElementById('fIsBalance').checked = true;
+  if (document.getElementById('fPayment').value==='PayPay잔고') document.getElementById('fIsBalance').checked = true;
 }
 async function submitEntry() {
   const rowIndex = document.getElementById('editRowIndex').value;
@@ -642,13 +714,12 @@ async function submitEntry() {
   await loadMonth(currentMonth);
 }
 
-// ── CSV 가져오기 ──
+// ── CSV ──
 function openCsvModal() {
   document.getElementById('csvPreview').style.display = 'none';
   document.getElementById('manualArea').style.display = 'none';
   document.getElementById('csvFileArea').style.display = 'block';
-  parsedCsv = [];
-  openModal('csvOverlay');
+  parsedCsv = []; openModal('csvOverlay');
 }
 function setCsvType(type, el) {
   csvType = type;
@@ -656,272 +727,162 @@ function setCsvType(type, el) {
   el.classList.add('active');
   document.getElementById('csvPreview').style.display = 'none';
   parsedCsv = [];
-  if (type === 'manual') {
+  if (type==='manual') {
     document.getElementById('csvFileArea').style.display = 'none';
     document.getElementById('manualArea').style.display = 'block';
   } else {
     document.getElementById('csvFileArea').style.display = 'block';
     document.getElementById('manualArea').style.display = 'none';
-    const labels = {
-      paypay: 'PayPay CSV 파일 클릭 또는 드래그',
-      rakuten: '라쿠텐카드 CSV 파일 클릭 또는 드래그',
-      paidy: '페이디 CSV 파일 클릭 또는 드래그',
-      custom: '가계부 내보낸 CSV 파일 클릭 또는 드래그 (2026-04.csv 등)'
-    };
-    document.getElementById('csvDropText').textContent = labels[type] || '';
+    const labels = {paypay:'PayPay CSV',rakuten:'라쿠텐카드 CSV',paidy:'페이디 CSV',custom:'가계부CSV (2026-04.csv 등)'};
+    document.getElementById('csvDropText').textContent = labels[type]||'';
   }
-}
-
-// 직접 붙여넣기 파서
-function parseManual() {
-  const text = document.getElementById('manualText').value.trim();
-  if (!text) return;
-  parsedCsv = [];
-  const year = currentMonth.slice(0,4);
-
-  // 결제수단 키워드 맵
-  const payMap = [
-    ['PayPay잔고', ['paypay잔고','페이페이잔고','잔고','잔고사용']],
-    ['라쿠텐카드', ['라쿠텐카드','라쿠텐','rakuten']],
-    ['페이디카드', ['페이디카드','페이디','paidy']],
-    ['현금', ['현금','cash']],
-    ['PayPay카드', ['paypay카드','페이페이카드','paypay','페이페이','카드']],
-  ];
-
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  for (const line of lines) {
-    // 날짜 추출: 4/1, 04/01, 4월1일 등
-    const dateMatch = line.match(/^(\d{1,2})[\/월](\d{1,2})/);
-    if (!dateMatch) continue;
-    const month = String(dateMatch[1]).padStart(2,'0');
-    const day   = String(dateMatch[2]).padStart(2,'0');
-    const date  = `${year}-${month}-${day}`;
-
-    // 금액 추출: 숫자(콤마 포함)
-    const amtMatch = line.match(/[\s　](\d{1,3}(?:,\d{3}|\d{0,3})?)\s*(엔|円|yen)?(\s|$)/i)
-                  || line.match(/(\d{3,6})/);
-    if (!amtMatch) continue;
-    const amount = parseInt(amtMatch[1].replace(/,/g,''));
-    if (!amount) continue;
-
-    // 결제수단 추출 (뒤에서부터 찾기)
-    const lower = line.toLowerCase();
-    let payment = 'PayPay카드';
-    let isBalance = false;
-    for (const [pay, keys] of payMap) {
-      if (keys.some(k => lower.includes(k))) { payment = pay; break; }
-    }
-    if (payment === 'PayPay잔고') isBalance = true;
-
-    // 항목: 날짜와 금액, 결제수단 제거 후 남은 텍스트
-    let item = line
-      .replace(/^\d{1,2}[\/월]\d{1,2}[일]?\s*/, '')
-      .replace(/[\d,]+\s*(엔|円)?/, '')
-      .replace(new RegExp(payment.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'), '')
-      .replace(/paypay잔고|페이페이잔고|라쿠텐카드|페이디카드|paypay카드|페이페이카드|현금|잔고/gi,'')
-      .replace(/\s{2,}/g,' ').trim();
-    if (!item) item = '미분류';
-
-    parsedCsv.push({date, item, category: guessCat(item), payment, amount, isBalance, memo:''});
-  }
-  showCsvPreview('직접 입력');
 }
 function setupDrag() {
   const drop = document.getElementById('csvDrop');
-  drop.addEventListener('dragover', e=>{e.preventDefault();drop.classList.add('drag');});
-  drop.addEventListener('dragleave', ()=>drop.classList.remove('drag'));
-  drop.addEventListener('drop', e=>{e.preventDefault();drop.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) parseCsvFile(f);});
+  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag');});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
+  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)parseCsvFile(f);});
 }
-function handleCsvFile(e) { const f=e.target.files[0]; if(f) parseCsvFile(f); e.target.value=''; }
-
+function handleCsvFile(e) { const f=e.target.files[0];if(f)parseCsvFile(f);e.target.value=''; }
 function parseCsvFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
-    if (csvType==='paypay') parsePayPay(e.target.result);
-    else if (csvType==='rakuten') parseRakuten(e.target.result);
-    else if (csvType==='paidy') parsePaidy(e.target.result);
-    else if (csvType==='custom') parseCustom(e.target.result);
+    if(csvType==='paypay') parsePayPay(e.target.result);
+    else if(csvType==='rakuten') parseRakuten(e.target.result);
+    else if(csvType==='paidy') parsePaidy(e.target.result);
+    else if(csvType==='custom') parseCustom(e.target.result);
   };
-  reader.readAsText(file, 'UTF-8');
+  reader.readAsText(file,'UTF-8');
 }
-
-// PayPay CSV パーサー
 function parsePayPay(text) {
   parsedCsv = [];
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
   const headers = parseLine(lines[0]);
-  for (let i=1; i<lines.length; i++) {
-    const cols = parseLine(lines[i]);
-    const row = {};
+  for (let i=1;i<lines.length;i++) {
+    const cols=parseLine(lines[i]),row={};
     headers.forEach((h,j)=>row[clean(h)]=clean(cols[j]||''));
-    const out = parseInt((row['出金金額（円）']||'0').replace(/,/g,''))||0;
-    if (!out) continue;
-    const date = (row['取引日']||'').slice(0,10);
-    const content = row['取引内容']||'';
-    const partner = row['取引先']||'';
-    const method = row['取引方法']||'';
-    const isBalance = method.includes('残高') && !method.includes('クレジット');
-    const payment = method.includes('クレジット')||method.includes('PayPayカード') ? 'PayPay카드' : (isBalance ? 'PayPay잔고' : 'PayPay카드');
-    parsedCsv.push({date, item:partner||content, category:guessCat(partner+content), payment, amount:out, isBalance, memo:''});
+    const out=parseInt((row['出金金額（円）']||'0').replace(/,/g,''))||0;
+    if(!out) continue;
+    const date=(row['取引日']||'').slice(0,10);
+    const content=row['取引内容']||'',partner=row['取引先']||'',method=row['取引方法']||'';
+    const isBalance=method.includes('残高')&&!method.includes('クレジット');
+    const payment=method.includes('クレジット')||method.includes('PayPayカード')?'PayPay카드':(isBalance?'PayPay잔고':'PayPay카드');
+    parsedCsv.push({date,item:partner||content,category:guessCat(partner+content),payment,amount:out,isBalance,memo:''});
   }
   showCsvPreview('PayPay');
 }
-
-// 라쿠텐카드 CSV パーサー (利用日,利用店名・商品名,利用者,支払方法,利用金額,支払金額)
 function parseRakuten(text) {
-  parsedCsv = [];
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  // 헤더 찾기
-  let headerIdx = 0;
-  for (let i=0; i<lines.length; i++) {
-    if (lines[i].includes('利用日') || lines[i].includes('利用店名')) { headerIdx = i; break; }
-  }
-  const headers = parseLine(lines[headerIdx]);
-  for (let i=headerIdx+1; i<lines.length; i++) {
-    const cols = parseLine(lines[i]);
-    if (cols.length < 4) continue;
-    const row = {};
-    headers.forEach((h,j)=>row[clean(h)]=clean(cols[j]||''));
-    // 라쿠텐 컬럼 매핑 시도
-    const dateRaw = row['利用日']||row['ご利用日']||'';
-    const name = row['利用店名・商品名']||row['利用店名']||row['ご利用店名']||cols[1]||'';
-    const amtRaw = row['利用金額']||row['支払金額']||row['ご利用金額']||cols[4]||'0';
-    const amt = parseInt(amtRaw.replace(/[,円]/g,''))||0;
-    if (!amt || !dateRaw) continue;
-    // 날짜 정규화 (YYYY/MM/DD → YYYY-MM-DD)
-    const date = dateRaw.replace(/\//g,'-').slice(0,10);
-    parsedCsv.push({date, item:name, category:guessCat(name), payment:'라쿠텐카드', amount:amt, isBalance:false, memo:''});
+  parsedCsv=[];const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let hi=0;for(let i=0;i<lines.length;i++){if(lines[i].includes('利用日')||lines[i].includes('利用店名')){hi=i;break;}}
+  const headers=parseLine(lines[hi]);
+  for(let i=hi+1;i<lines.length;i++){
+    const cols=parseLine(lines[i]);if(cols.length<4)continue;
+    const row={};headers.forEach((h,j)=>row[clean(h)]=clean(cols[j]||''));
+    const dateRaw=row['利用日']||row['ご利用日']||'';
+    const name=row['利用店名・商品名']||row['利用店名']||cols[1]||'';
+    const amt=parseInt((row['利用金額']||row['支払金額']||cols[4]||'0').replace(/[,円]/g,''))||0;
+    if(!amt||!dateRaw)continue;
+    parsedCsv.push({date:dateRaw.replace(/\//g,'-').slice(0,10),item:name,category:guessCat(name),payment:'라쿠텐카드',amount:amt,isBalance:false,memo:''});
   }
   showCsvPreview('라쿠텐카드');
 }
-
-// 페이디 CSV パーサー
 function parsePaidy(text) {
-  parsedCsv = [];
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  let headerIdx = 0;
-  for (let i=0; i<lines.length; i++) {
-    if (lines[i].includes('日付')||lines[i].includes('購入日')||lines[i].includes('date')) { headerIdx=i; break; }
-  }
-  const headers = parseLine(lines[headerIdx]);
-  for (let i=headerIdx+1; i<lines.length; i++) {
-    const cols = parseLine(lines[i]);
-    if (cols.length < 2) continue;
-    const row = {};
-    headers.forEach((h,j)=>row[clean(h)]=clean(cols[j]||''));
-    const dateRaw = row['購入日']||row['日付']||row['date']||cols[0]||'';
-    const name = row['ショップ名']||row['shop']||row['利用先']||cols[1]||'';
-    const amtRaw = row['お支払い金額']||row['金額']||row['amount']||cols[2]||'0';
-    const amt = parseInt(amtRaw.replace(/[,円]/g,''))||0;
-    if (!amt) continue;
-    const date = dateRaw.replace(/\//g,'-').slice(0,10);
-    parsedCsv.push({date, item:name, category:guessCat(name), payment:'페이디카드', amount:amt, isBalance:false, memo:''});
+  parsedCsv=[];const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let hi=0;for(let i=0;i<lines.length;i++){if(lines[i].includes('日付')||lines[i].includes('購入日')){hi=i;break;}}
+  const headers=parseLine(lines[hi]);
+  for(let i=hi+1;i<lines.length;i++){
+    const cols=parseLine(lines[i]);if(cols.length<2)continue;
+    const row={};headers.forEach((h,j)=>row[clean(h)]=clean(cols[j]||''));
+    const dateRaw=row['購入日']||row['日付']||cols[0]||'';
+    const name=row['ショップ名']||row['利用先']||cols[1]||'';
+    const amt=parseInt((row['お支払い金額']||row['金額']||cols[2]||'0').replace(/[,円]/g,''))||0;
+    if(!amt)continue;
+    parsedCsv.push({date:dateRaw.replace(/\//g,'-').slice(0,10),item:name,category:guessCat(name),payment:'페이디카드',amount:amt,isBalance:false,memo:''});
   }
   showCsvPreview('페이디카드');
 }
-
-// 가계부 자체 CSV 파서 (ID,날짜,항목,카테고리,결제수단,금액,잔고여부,메모)
 function parseCustom(text) {
-  parsedCsv = [];
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  if (lines.length < 2) return;
-  const headers = parseLine(lines[0]).map(clean);
-  for (let i=1; i<lines.length; i++) {
-    const cols = parseLine(lines[i]).map(clean);
-    if (cols.length < 6) continue;
-    const row = {};
-    headers.forEach((h,j) => row[h] = cols[j]||'');
-    const amt = parseInt((row['금액']||'0').replace(/,/g,''));
-    if (!amt) continue;
-    parsedCsv.push({
-      date: row['날짜']||'',
-      item: row['항목']||'',
-      category: row['카테고리']||'기타',
-      payment: row['결제수단']||'PayPay카드',
-      amount: amt,
-      isBalance: row['잔고여부']==='TRUE'||row['잔고여부']==='true',
-      memo: row['메모']||''
-    });
+  parsedCsv=[];const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2)return;
+  const headers=parseLine(lines[0]).map(clean);
+  for(let i=1;i<lines.length;i++){
+    const cols=parseLine(lines[i]).map(clean);if(cols.length<6)continue;
+    const row={};headers.forEach((h,j)=>row[h]=cols[j]||'');
+    const amt=parseInt((row['금액']||'0').replace(/,/g,''));if(!amt)continue;
+    parsedCsv.push({date:row['날짜']||'',item:row['항목']||'',category:row['카테고리']||'기타',
+      payment:row['결제수단']||'PayPay카드',amount:amt,
+      isBalance:row['잔고여부']==='TRUE'||row['잔고여부']==='true',memo:row['메모']||''});
   }
   showCsvPreview('가계부CSV');
 }
-
-function showCsvPreview(cardName) {
-  document.getElementById('csvCount').textContent = `${cardName} — ${parsedCsv.length}건 파싱됨. 카테고리 확인 후 저장`;
-  document.getElementById('csvRows').innerHTML = parsedCsv.map((r,i) => `
-    <div class="csv-row">
-      <div class="csv-row-info">
-        <div class="name">${r.date.slice(5)} ${r.item}</div>
-        <div class="sub">¥${fmt(r.amount)} · ${r.payment}${r.isBalance?' · 잔고':''}</div>
-      </div>
-      <select onchange="parsedCsv[${i}].category=this.value">
-        ${CATEGORIES.map(c=>`<option value="${c}"${r.category===c?' selected':''}>${c}</option>`).join('')}
-      </select>
-    </div>`).join('');
-  document.getElementById('csvPreview').style.display = 'block';
-}
-
-async function importCsv() {
-  if (!parsedCsv.length) return;
-  const btn = event.target;
-  btn.textContent = '저장 중...';
-  btn.disabled = true;
-
-  // payload URL 길이 제한 때문에 10건씩 나눠서 전송
-  const CHUNK = 10;
-  try {
-    for (let i = 0; i < parsedCsv.length; i += CHUNK) {
-      const chunk = parsedCsv.slice(i, i + CHUNK);
-      btn.textContent = `저장 중... ${Math.min(i+CHUNK, parsedCsv.length)}/${parsedCsv.length}건`;
-      const res = await apiPost({action:'bulkAdd', month:currentMonth, entries:chunk});
-      if (!res || res.error) throw new Error(res ? res.error : '응답 없음');
-    }
-    closeModal('csvOverlay');
-    parsedCsv = [];
-    await loadMonth(currentMonth);
-  } catch(e) {
-    alert(`저장 실패: ${e.message}\n\nCSV 다운로드로 구글 시트에 직접 붙여넣기 가능합니다.`);
-    btn.textContent = '저장';
-    btn.disabled = false;
+function parseManual() {
+  const text=document.getElementById('manualText').value.trim();if(!text)return;
+  parsedCsv=[];const year=currentMonth.slice(0,4);
+  const payMap=[['PayPay잔고',['paypay잔고','페이페이잔고','잔고','잔고사용']],['라쿠텐카드',['라쿠텐카드','라쿠텐','rakuten']],['페이디카드',['페이디카드','페이디','paidy']],['현금',['현금','cash']],['PayPay카드',['paypay카드','페이페이카드','paypay','페이페이','카드']]];
+  for(const line of text.split('\n').map(l=>l.trim()).filter(Boolean)){
+    const dm=line.match(/^(\d{1,2})[\/월](\d{1,2})/);if(!dm)continue;
+    const date=`${year}-${String(dm[1]).padStart(2,'0')}-${String(dm[2]).padStart(2,'0')}`;
+    const am=line.match(/[\s　](\d{1,3}(?:,\d{3}|\d{0,3})?)\s*(엔|円)?(\s|$)/i)||line.match(/(\d{3,6})/);
+    if(!am)continue;
+    const amount=parseInt(am[1].replace(/,/g,''));if(!amount)continue;
+    const lower=line.toLowerCase();let payment='PayPay카드',isBalance=false;
+    for(const[pay,keys]of payMap){if(keys.some(k=>lower.includes(k))){payment=pay;break;}}
+    if(payment==='PayPay잔고')isBalance=true;
+    let item=line.replace(/^\d{1,2}[\/월]\d{1,2}[일]?\s*/,'').replace(/[\d,]+\s*(엔|円)?/,'').replace(new RegExp(payment.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),'').replace(/paypay잔고|페이페이잔고|라쿠텐카드|페이디카드|paypay카드|페이페이카드|현금|잔고/gi,'').replace(/\s{2,}/g,' ').trim();
+    if(!item)item='미분류';
+    parsedCsv.push({date,item,category:guessCat(item),payment,amount,isBalance,memo:''});
   }
+  showCsvPreview('직접 입력');
 }
-
+function showCsvPreview(cardName) {
+  document.getElementById('csvCount').textContent=`${cardName} — ${parsedCsv.length}건 파싱됨`;
+  document.getElementById('csvRows').innerHTML=parsedCsv.map((r,i)=>`
+    <div class="csv-row">
+      <div class="csv-row-info"><div class="name">${r.date.slice(5)} ${r.item}</div><div class="sub">¥${fmt(r.amount)} · ${r.payment}${r.isBalance?' · 잔고':''}</div></div>
+      <select onchange="parsedCsv[${i}].category=this.value">${CATEGORIES.map(c=>`<option value="${c}"${r.category===c?' selected':''}>${c}</option>`).join('')}</select>
+    </div>`).join('');
+  document.getElementById('csvPreview').style.display='block';
+}
+async function importCsv() {
+  if(!parsedCsv.length)return;
+  const btn=event.target;btn.textContent='저장 중...';btn.disabled=true;
+  const CHUNK=10;
+  try {
+    for(let i=0;i<parsedCsv.length;i+=CHUNK){
+      btn.textContent=`저장 중... ${Math.min(i+CHUNK,parsedCsv.length)}/${parsedCsv.length}건`;
+      const res=await apiPost({action:'bulkAdd',month:currentMonth,entries:parsedCsv.slice(i,i+CHUNK)});
+      if(!res||res.error)throw new Error(res?res.error:'응답 없음');
+    }
+    closeModal('csvOverlay');parsedCsv=[];await loadMonth(currentMonth);
+  } catch(e){alert(`저장 실패: ${e.message}`);btn.textContent='저장';btn.disabled=false;}
+}
 function downloadCsv() {
-  if (!parsedCsv.length) return;
-  const header = 'ID,날짜,항목,카테고리,결제수단,금액,잔고여부,메모';
-  const rows = parsedCsv.map((r,i) =>
-    `${Date.now()+i},${r.date},"${r.item}",${r.category},${r.payment},${r.amount},${r.isBalance?'TRUE':'FALSE'},"${r.memo||''}"`
-  );
-  const blob = new Blob([header + '\n' + rows.join('\n')], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${currentMonth}.csv`;
-  a.click();
+  if(!parsedCsv.length)return;
+  const header='ID,날짜,항목,카테고리,결제수단,금액,잔고여부,메모';
+  const rows=parsedCsv.map((r,i)=>`${Date.now()+i},${r.date},"${r.item}",${r.category},${r.payment},${r.amount},${r.isBalance?'TRUE':'FALSE'},"${r.memo||''}"`);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([header+'\n'+rows.join('\n')],{type:'text/csv;charset=utf-8;'}));
+  a.download=`${currentMonth}.csv`;a.click();
 }
 
-// ── 유틸 ──
 function guessCat(t) {
-  t = t.toLowerCase();
-  if (/家賃|やちん|携帯|スマホ|docomo|au|softbank|ソフトバンク|インターネット|光|ntt|管理費/.test(t)) return '고정비';
-  if (/税|tax|住民税|固定資産/.test(t)) return '세금';
-  if (/病院|クリニック|医院|歯科|薬局|ドラッグ/.test(t)) return '병원';
-  if (/電車|バス|タクシー|suica|pasmo|ic|交通|新幹線|飛行機/.test(t)) return '교통비';
-  if (/居酒屋|バー|bar|飲み|スタンド|アオギリ|サンヤ|呑|ビール|ハイボール|izakaya/.test(t)) return '술자리';
-  if (/カメラ|ゲーム|趣味|hobby|amazon|テム|temu|メルカリ|衣類|ファッション|靴|スニーカー/.test(t)) return '취미·사치쇼핑';
-  if (/コンビニ|セブン|ファミマ|ローソン|ミニスト|コーヒー|カフェ|スタバ|ドトール|タピオカ|コーラ/.test(t)) return '간식비';
-  if (/ラーメン|そば|うどん|定食|ランチ|レストラン|焼肉|寿司|touch|タッチ|マクドナルド|ケンタッキー|吉野家|すき家/.test(t)) return '외식비';
-  if (/マート|スーパー|いなげや|オーケー|東急ストア|イオン|コスモス|食材|生鮮/.test(t)) return '가계쇼핑';
+  t=t.toLowerCase();
+  if(/家賃|やちん|携帯|スマホ|docomo|au|softbank|インターネット|光|ntt|管理費/.test(t))return '고정비';
+  if(/税|tax|住民税/.test(t))return '세금';
+  if(/病院|クリニック|医院|歯科|薬局|ドラッグ/.test(t))return '병원';
+  if(/電車|バス|タクシー|suica|pasmo|交通|新幹線/.test(t))return '교통비';
+  if(/居酒屋|バー|bar|飲み|スタンド|アオギリ|サンヤ|呑|ビール|ハイボール/.test(t))return '술자리';
+  if(/カメラ|ゲーム|temu|テム|メルカリ|衣類|ファッション|靴|スニーカー/.test(t))return '취미·사치쇼핑';
+  if(/コンビニ|セブン|ファミマ|ローソン|コーヒー|カフェ|スタバ|コーラ/.test(t))return '간식비';
+  if(/ラーメン|そば|うどん|定食|ランチ|レストラン|焼肉|寿司|touch|マクドナルド|吉野家/.test(t))return '외식비';
+  if(/マート|スーパー|いなげや|オーケー|東急ストア|イオン|食材/.test(t))return '가계쇼핑';
   return '기타';
 }
-function parseLine(line) {
-  const res=[]; let cur=''; let inQ=false;
-  for(const c of line){ if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){res.push(cur);cur='';}else{cur+=c;} }
-  res.push(cur); return res;
-}
-function clean(s) { return s.replace(/^"|"$/g,'').trim(); }
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function closeOnBg(e,id) { if(e.target.id===id) closeModal(id); }
+function parseLine(line){const res=[];let cur='',inQ=false;for(const c of line){if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){res.push(cur);cur='';}else{cur+=c;}}res.push(cur);return res;}
+function clean(s){return s.replace(/^"|"$/g,'').trim();}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeOnBg(e,id){if(e.target.id===id)closeModal(id);}
 </script>
 </body>
 </html>
