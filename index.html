@@ -210,6 +210,26 @@ tr:hover td { background: var(--surface2); }
 .week-row.active td {
   box-shadow: inset 3px 0 0 var(--text);
 }
+
+.type-pill {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.06);
+  color: var(--muted);
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.type-pill.installment {
+  background: rgba(107,62,207,.10);
+  color: var(--pa);
+}
+.week-split-strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
 .period-tab span {
   vertical-align: baseline;
 }
@@ -396,6 +416,11 @@ select option { background: var(--surface); }
         <option value="교통비">교통비</option>
         <option value="기타">기타</option>
       </select>
+      <select id="filterType" style="width:auto;padding:4px 8px;font-size:12px" onchange="renderTable()">
+        <option value="">전체구분</option>
+        <option value="일반">일반</option>
+        <option value="할부·이월">할부·이월</option>
+      </select>
       <select id="filterCard" style="width:auto;padding:4px 8px;font-size:12px" onchange="renderTable()">
         <option value="">전카드</option>
         <option value="PayPay카드">PayPay카드</option>
@@ -471,15 +496,22 @@ select option { background: var(--surface); }
           </select>
         </div>
         <div class="form-group">
-          <label>결제수단</label>
-          <select id="fPayment" onchange="onPaymentChange()">
-            <option value="PayPay카드">PayPay카드</option>
-            <option value="PayPay잔고">PayPay잔고</option>
-            <option value="라쿠텐카드">라쿠텐카드</option>
-            <option value="페이디카드">페이디카드</option>
-            <option value="현금">현금</option>
+          <label>집계구분</label>
+          <select id="fSpendType">
+            <option value="일반">일반</option>
+            <option value="할부·이월">할부·이월</option>
           </select>
         </div>
+      </div>
+      <div class="form-group">
+        <label>결제수단</label>
+        <select id="fPayment" onchange="onPaymentChange()">
+          <option value="PayPay카드">PayPay카드</option>
+          <option value="PayPay잔고">PayPay잔고</option>
+          <option value="라쿠텐카드">라쿠텐카드</option>
+          <option value="페이디카드">페이디카드</option>
+          <option value="현금">현금</option>
+        </select>
       </div>
       <div class="form-group"><label>메모 (선택)</label><input type="text" id="fMemo" placeholder=""></div>
       <div class="form-group">
@@ -553,8 +585,11 @@ const FIXED_CATS = ['고정비','세금'];
 const CAT_COLORS = {'가계쇼핑':'#0a9e7a','취미·사치쇼핑':'#7c3aed','외식비':'#d4860a','간식비':'#e07b39','술자리':'#c4294a','고정비':'#2563b0','세금':'#1a7a5e','병원':'#2a8a2a','교통비':'#0891b2','기타':'#888'};
 const PAY_BADGE = {'PayPay카드':'b-pp','라쿠텐카드':'b-rk','페이디카드':'b-pa','PayPay잔고':'b-bl','현금':'b-cash'};
 const CARD_PAYMENTS = ['PayPay카드','라쿠텐카드','페이디카드','현금'];
+const SPEND_TYPES = ['일반','할부·이월'];
+const INSTALLMENT_TYPE = '할부·이월';
 const CAT_OPTIONS = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
 const PAY_OPTIONS = `<option value="PayPay카드">PayPay카드</option><option value="PayPay잔고">PayPay잔고</option><option value="라쿠텐카드">라쿠텐카드</option><option value="페이디카드">페이디카드</option><option value="현금">현금</option>`;
+const SPEND_TYPE_OPTIONS = SPEND_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
 
 let gasUrl = localStorage.getItem('gasUrl') || GAS_DEFAULT;
 let budget = Number(localStorage.getItem('budget') || 100000);
@@ -573,6 +608,38 @@ window.addEventListener('DOMContentLoaded', () => {
 function fmtMonth(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
 function fmt(n) { return Math.round(Number(n)).toLocaleString('ja-JP'); }
 function todayStr() { return new Date().toISOString().slice(0,10); }
+
+function normalizeSpendType(v) {
+  const s = String(v || '').trim();
+  if (!s) return '일반';
+  if (s.includes('할부') || s.includes('이월')) return INSTALLMENT_TYPE;
+  return '일반';
+}
+
+function guessSpendType(text='') {
+  const s = String(text || '');
+  return /(할부|이월|분할|회차|後請求|分割)/.test(s) ? INSTALLMENT_TYPE : '일반';
+}
+
+function applySpendTypeFields(entry, spendType) {
+  const type = normalizeSpendType(spendType);
+  entry.spendType = type;
+  entry['집계구분'] = type;
+  return entry;
+}
+
+function isInstallment(r) {
+  return normalizeSpendType(r.spendType || r['집계구분']) === INSTALLMENT_TYPE;
+}
+
+function isNormalSpend(r) {
+  return !isInstallment(r);
+}
+
+function typePill(r) {
+  return isInstallment(r) ? '<span class="type-pill installment">할부·이월</span>' : '';
+}
+
 
 // ── FAB ──
 function toggleFab(force) {
@@ -636,6 +703,7 @@ async function loadMonth(month) {
     allRows = (data.rows||[]).map(r => ({
       date:r['날짜'], item:r['항목'], category:r['카테고리'], payment:r['결제수단'],
       amount:Number(r['금액']), isBalance:r['잔고여부']===true||r['잔고여부']==='TRUE',
+      spendType: normalizeSpendType(r['집계구분'] || r['spendType'] || r['구분']),
       memo:r['메모']||'', _rowIndex:r._rowIndex
     }));
   } catch(e) { allRows = []; }
@@ -653,7 +721,7 @@ function updateSummary() {
   const pa = charged.filter(r=>r.payment==='페이디카드').reduce((s,r)=>s+r.amount,0);
   const total = charged.reduce((s,r)=>s+r.amount,0);
   const balTotal = allRows.filter(r=>r.isBalance||r.payment==='PayPay잔고').reduce((s,r)=>s+r.amount,0);
-  const varSpent = charged.filter(r=>!isFixed(r)).reduce((s,r)=>s+r.amount,0);
+  const varSpent = charged.filter(r=>!isFixed(r)&&isNormalSpend(r)).reduce((s,r)=>s+r.amount,0);
   const fixedSpent = charged.filter(r=>isFixed(r)).reduce((s,r)=>s+r.amount,0);
   document.getElementById('sumPP').textContent = fmt(pp);
   document.getElementById('sumRK').textContent = fmt(rk);
@@ -776,12 +844,23 @@ function isCashPayment(r) {
 
 function calcPeriodStats(rows, dayBase=1) {
   const total = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const normalRows = rows.filter(isNormalSpend);
+  const installmentRows = rows.filter(isInstallment);
+
+  const normalTotal = normalRows.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const installmentTotal = installmentRows.reduce((s, r) => s + Number(r.amount || 0), 0);
+
   const cardTotal = rows.filter(isCreditCardPayment).reduce((s, r) => s + Number(r.amount || 0), 0);
   const balanceTotal = rows.filter(isBalancePayment).reduce((s, r) => s + Number(r.amount || 0), 0);
   const cashTotal = rows.filter(isCashPayment).reduce((s, r) => s + Number(r.amount || 0), 0);
+
   const activeDays = new Set(rows.map(r => String(r.date).slice(0, 10))).size;
+  const normalActiveDays = new Set(normalRows.map(r => String(r.date).slice(0, 10))).size;
+
   const avgPerCalendarDay = total / Math.max(1, dayBase);
+  const normalAvgPerCalendarDay = normalTotal / Math.max(1, dayBase);
   const avgPerActiveDay = activeDays ? total / activeDays : 0;
+  const normalAvgPerActiveDay = normalActiveDays ? normalTotal / normalActiveDays : 0;
 
   const paymentTotals = {};
   rows.forEach(r => {
@@ -793,19 +872,32 @@ function calcPeriodStats(rows, dayBase=1) {
     catTotals[r.category] = (catTotals[r.category] || 0) + Number(r.amount || 0);
   });
 
+  const normalCatTotals = {};
+  normalRows.forEach(r => {
+    normalCatTotals[r.category] = (normalCatTotals[r.category] || 0) + Number(r.amount || 0);
+  });
+
   const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  const sortedNormalCats = Object.entries(normalCatTotals).sort((a, b) => b[1] - a[1]);
   const sortedPayments = Object.entries(paymentTotals).sort((a, b) => b[1] - a[1]);
 
   return {
     total,
+    normalTotal,
+    installmentTotal,
     cardTotal,
     balanceTotal,
     cashTotal,
     activeDays,
+    normalActiveDays,
     avgPerCalendarDay,
+    normalAvgPerCalendarDay,
     avgPerActiveDay,
+    normalAvgPerActiveDay,
     catTotals,
+    normalCatTotals,
     sortedCats,
+    sortedNormalCats,
     paymentTotals,
     sortedPayments
   };
@@ -874,7 +966,7 @@ function renderCategoryScopeSummary(rows) {
 
   const dayBase = getChartScopeDayBase();
   const stat = calcPeriodStats(rows, dayBase);
-  const topCat = stat.sortedCats[0];
+  const topCat = stat.sortedNormalCats[0] || stat.sortedCats[0];
   const topText = topCat ? `${topCat[0]} ¥${fmt(topCat[1])}` : '-';
   const topPayment = stat.sortedPayments[0];
   const paymentText = topPayment ? `${topPayment[0]} ¥${fmt(topPayment[1])}` : '-';
@@ -886,19 +978,19 @@ function renderCategoryScopeSummary(rows) {
       <div class="scope-sub">${rows.length}건 · ${dayBase}일 기준</div>
     </div>
     <div class="scope-card">
+      <div class="scope-label">일반소비</div>
+      <div class="scope-value">¥${fmt(stat.normalTotal)}</div>
+      <div class="scope-sub">일평균 ¥${fmt(stat.normalAvgPerCalendarDay)}</div>
+    </div>
+    <div class="scope-card">
+      <div class="scope-label">할부·이월</div>
+      <div class="scope-value">¥${fmt(stat.installmentTotal)}</div>
+      <div class="scope-sub">${rows.filter(isInstallment).length}건</div>
+    </div>
+    <div class="scope-card">
       <div class="scope-label">결제 구분</div>
       <div class="scope-value small">카드 ¥${fmt(stat.cardTotal)}</div>
-      <div class="scope-sub">잔고 ¥${fmt(stat.balanceTotal)} / 현금 ¥${fmt(stat.cashTotal)}</div>
-    </div>
-    <div class="scope-card">
-      <div class="scope-label">평균</div>
-      <div class="scope-value">¥${fmt(stat.avgPerCalendarDay)}</div>
-      <div class="scope-sub">입력일평균 ¥${fmt(stat.avgPerActiveDay)}</div>
-    </div>
-    <div class="scope-card">
-      <div class="scope-label">주요 항목</div>
-      <div class="scope-value small">${topText}</div>
-      <div class="scope-sub">${paymentText}</div>
+      <div class="scope-sub">잔고 ¥${fmt(stat.balanceTotal)} / 현금 ¥${fmt(stat.cashTotal)} · ${topText} · ${paymentText}</div>
     </div>`;
 }
 
@@ -924,9 +1016,7 @@ function toggleWeek(key) {
 }
 
 function setAllWeeks(collapsed) {
-  const cf = document.getElementById('filterCat').value;
-  const pf = document.getElementById('filterCard').value;
-  const rows = allRows.filter(r => (!cf || r.category === cf) && (!pf || r.payment === pf));
+  const rows = getFilteredTableRows();
   const groups = groupRowsByWeek(rows);
   const map = getCollapsedMap();
   groups.forEach(g => { map[g.key] = collapsed; });
@@ -938,8 +1028,7 @@ function renderWeekHeader(group) {
   const stat = calcPeriodStats(group.rows, group.dayBase);
   const collapsed = isWeekCollapsed(group.key);
   const active = activeChartScope === group.key;
-  const avgText = `일평균 ¥${fmt(stat.avgPerCalendarDay)}`;
-  const catText = formatTopCats(stat.catTotals, 3);
+  const catText = formatTopCats(stat.normalCatTotals, 3);
 
   return `
     <tr class="week-row${active ? ' active' : ''}" onclick="toggleWeek('${group.key}')">
@@ -950,10 +1039,12 @@ function renderWeekHeader(group) {
               <span class="week-range">${group.label} · ${group.range}</span>
               <span class="week-count">${group.dayBase}일 · ${group.rows.length}건</span>
             </div>
-            <span class="week-total">¥${fmt(stat.total)} <button class="week-toggle-btn" onclick="event.stopPropagation();toggleWeek('${group.key}')">${collapsed ? '펼치기' : '접기'}</button></span>
+            <span class="week-total">전체 ¥${fmt(stat.total)} <button class="week-toggle-btn" onclick="event.stopPropagation();toggleWeek('${group.key}')">${collapsed ? '펼치기' : '접기'}</button></span>
           </div>
           <div class="week-sub">
-            <span>${avgText}</span>
+            <span class="week-split-strong">일반 ¥${fmt(stat.normalTotal)}</span>
+            ${stat.installmentTotal ? `<span class="week-split-strong">할부·이월 ¥${fmt(stat.installmentTotal)}</span>` : ''}
+            <span>일반 일평균 ¥${fmt(stat.normalAvgPerCalendarDay)}</span>
             <span class="week-pay-split">카드 ¥${fmt(stat.cardTotal)}</span>
             <span class="week-pay-split">잔고 ¥${fmt(stat.balanceTotal)}</span>
             ${stat.cashTotal ? `<span class="week-pay-split">현금 ¥${fmt(stat.cashTotal)}</span>` : ''}
@@ -965,12 +1056,18 @@ function renderWeekHeader(group) {
     </tr>`;
 }
 
-function renderTable() {
+function getFilteredTableRows() {
   const cf = document.getElementById('filterCat').value;
+  const tf = document.getElementById('filterType') ? document.getElementById('filterType').value : '';
   const pf = document.getElementById('filterCard').value;
-  const rows = allRows
-    .filter(r => (!cf || r.category === cf) && (!pf || r.payment === pf))
+
+  return allRows
+    .filter(r => (!cf || r.category === cf) && (!tf || normalizeSpendType(r.spendType) === tf) && (!pf || r.payment === pf))
     .sort((a, b) => String(a.date) < String(b.date) ? -1 : 1);
+}
+
+function renderTable() {
+  const rows = getFilteredTableRows();
 
   if (!rows.length) {
     document.getElementById('txBody').innerHTML = `<tr><td colspan="6"><div class="empty">내역 없음</div></td></tr>`;
@@ -985,7 +1082,7 @@ function renderTable() {
     const rowHtml = collapsed ? '' : group.rows.map(r => `
       <tr>
         <td class="muted-text">${String(r.date).slice(5)}</td>
-        <td>${r.item}${r.memo ? `<span style="font-size:11px;color:var(--muted);margin-left:5px">${r.memo}</span>` : ''}</td>
+        <td>${r.item}${typePill(r)}${r.memo ? `<span style="font-size:11px;color:var(--muted);margin-left:5px">${r.memo}</span>` : ''}</td>
         <td><span class="cat-dot" style="background:${CAT_COLORS[r.category] || '#888'}"></span>${r.category}</td>
         <td><span class="badge ${PAY_BADGE[r.payment] || 'b-cash'}">${r.payment}</span></td>
         <td class="num${r.isBalance ? ' muted-text' : ''}">${fmt(r.amount)}</td>
@@ -1001,15 +1098,15 @@ function renderTable() {
   const [y, m] = currentMonth.split('-').map(Number);
   const monthDays = new Date(y, m, 0).getDate();
   const stat = calcPeriodStats(rows, monthDays);
-  const topCat = stat.sortedCats[0];
+  const topCat = stat.sortedNormalCats[0] || stat.sortedCats[0];
 
   document.getElementById('txFoot').innerHTML = `
     <tr class="total-row">
       <td colspan="2">필터 기준 합계</td>
       <td>${topCat ? `${topCat[0]} ¥${fmt(topCat[1])}` : '-'}</td>
       <td class="num">전체 ${fmt(stat.total)}</td>
-      <td class="num">카드 ${fmt(stat.cardTotal)}</td>
-      <td class="muted-text" style="text-align:right">잔고 ${fmt(stat.balanceTotal)}</td>
+      <td class="num">일반 ${fmt(stat.normalTotal)}</td>
+      <td class="muted-text" style="text-align:right">할부·이월 ${fmt(stat.installmentTotal)}</td>
     </tr>`;
 }
 
@@ -1072,6 +1169,7 @@ function openAddModal(mode='single') {
   document.getElementById('fAmount').value = '';
   document.getElementById('fItem').value = '';
   document.getElementById('fCategory').value = '외식비';
+  document.getElementById('fSpendType').value = '일반';
   document.getElementById('fPayment').value = 'PayPay카드';
   document.getElementById('fMemo').value = '';
   document.getElementById('fIsBalance').checked = false;
@@ -1109,20 +1207,22 @@ function addMultiRow() {
     <div class="form-group"><label>항목</label><input type="text" class="mr-item" placeholder="어디서 뭘"></div>
     <div class="form-row">
       <div class="form-group"><label>카테고리</label><select class="mr-cat">${CAT_OPTIONS}</select></div>
-      <div class="form-group"><label>결제수단</label><select class="mr-pay" onchange="onMultiPayChange(this)">${PAY_OPTIONS}</select></div>
+      <div class="form-group"><label>집계구분</label><select class="mr-type">${SPEND_TYPE_OPTIONS}</select></div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label>결제수단</label><select class="mr-pay" onchange="onMultiPayChange(this)">${PAY_OPTIONS}</select></div>
       <div class="form-group"><label>메모</label><input type="text" class="mr-memo" placeholder=""></div>
-      <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px">
-        <div class="toggle-wrap">
-          <label class="toggle"><input type="checkbox" class="mr-balance"><span class="toggle-slider"></span></label>
-          <span class="toggle-label" style="font-size:11px">잔고</span>
-        </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <div class="toggle-wrap">
+        <label class="toggle"><input type="checkbox" class="mr-balance"><span class="toggle-slider"></span></label>
+        <span class="toggle-label" style="font-size:11px">잔고 사용 (카드 청구 제외)</span>
       </div>
     </div>`;
   document.getElementById('multiList').appendChild(div);
   // 기본 카테고리 외식비
   div.querySelector('.mr-cat').value = '외식비';
+  div.querySelector('.mr-type').value = '일반';
 }
 
 function removeMultiRow(id) {
@@ -1144,13 +1244,13 @@ async function submitMulti() {
     const amount = row.querySelector('.mr-amount').value;
     const item = row.querySelector('.mr-item').value.trim();
     if (!date || !amount || !item) continue; // 빈 행 스킵
-    entries.push({
+    entries.push(applySpendTypeFields({
       date, amount: Number(amount), item,
       category: row.querySelector('.mr-cat').value,
       payment: row.querySelector('.mr-pay').value,
       memo: row.querySelector('.mr-memo').value,
       isBalance: row.querySelector('.mr-balance').checked
-    });
+    }, row.querySelector('.mr-type').value));
   }
   if (!entries.length) { alert('입력된 항목이 없습니다.'); return; }
   const btn = document.getElementById('multiSaveBtn');
@@ -1190,6 +1290,7 @@ function editEntry(row) {
   document.getElementById('fAmount').value = row.amount;
   document.getElementById('fItem').value = row.item;
   document.getElementById('fCategory').value = row.category;
+  document.getElementById('fSpendType').value = normalizeSpendType(row.spendType);
   document.getElementById('fPayment').value = row.payment;
   document.getElementById('fMemo').value = row.memo||'';
   document.getElementById('fIsBalance').checked = row.isBalance;
@@ -1200,7 +1301,7 @@ function onPaymentChange() {
 }
 async function submitEntry() {
   const rowIndex = document.getElementById('editRowIndex').value;
-  const entry = {
+  const entry = applySpendTypeFields({
     date: document.getElementById('fDate').value,
     amount: document.getElementById('fAmount').value,
     item: document.getElementById('fItem').value,
@@ -1208,7 +1309,7 @@ async function submitEntry() {
     payment: document.getElementById('fPayment').value,
     memo: document.getElementById('fMemo').value,
     isBalance: document.getElementById('fIsBalance').checked
-  };
+  }, document.getElementById('fSpendType').value);
   if (!entry.item||!entry.amount||!entry.date) { alert('날짜, 항목, 금액은 필수입니다.'); return; }
   const action = rowIndex ? 'updateEntry' : 'addEntry';
   await apiPost(rowIndex ? {action,month:currentMonth,rowIndex:Number(rowIndex),entry} : {action,month:currentMonth,entry});
@@ -1269,7 +1370,7 @@ function parsePayPay(text) {
     const content=row['取引内容']||'',partner=row['取引先']||'',method=row['取引方法']||'';
     const isBalance=method.includes('残高')&&!method.includes('クレジット');
     const payment=method.includes('クレジット')||method.includes('PayPayカード')?'PayPay카드':(isBalance?'PayPay잔고':'PayPay카드');
-    parsedCsv.push({date,item:partner||content,category:guessCat(partner+content),payment,amount:out,isBalance,memo:''});
+    parsedCsv.push(applySpendTypeFields({date,item:partner||content,category:guessCat(partner+content),payment,amount:out,isBalance,memo:''}, guessSpendType(partner+content)));
   }
   showCsvPreview('PayPay');
 }
@@ -1284,7 +1385,7 @@ function parseRakuten(text) {
     const name=row['利用店名・商品名']||row['利用店名']||cols[1]||'';
     const amt=parseInt((row['利用金額']||row['支払金額']||cols[4]||'0').replace(/[,円]/g,''))||0;
     if(!amt||!dateRaw)continue;
-    parsedCsv.push({date:dateRaw.replace(/\//g,'-').slice(0,10),item:name,category:guessCat(name),payment:'라쿠텐카드',amount:amt,isBalance:false,memo:''});
+    parsedCsv.push(applySpendTypeFields({date:dateRaw.replace(/\//g,'-').slice(0,10),item:name,category:guessCat(name),payment:'라쿠텐카드',amount:amt,isBalance:false,memo:''}, guessSpendType(name)));
   }
   showCsvPreview('라쿠텐카드');
 }
@@ -1299,7 +1400,7 @@ function parsePaidy(text) {
     const name=row['ショップ名']||row['利用先']||cols[1]||'';
     const amt=parseInt((row['お支払い金額']||row['金額']||cols[2]||'0').replace(/[,円]/g,''))||0;
     if(!amt)continue;
-    parsedCsv.push({date:dateRaw.replace(/\//g,'-').slice(0,10),item:name,category:guessCat(name),payment:'페이디카드',amount:amt,isBalance:false,memo:''});
+    parsedCsv.push(applySpendTypeFields({date:dateRaw.replace(/\//g,'-').slice(0,10),item:name,category:guessCat(name),payment:'페이디카드',amount:amt,isBalance:false,memo:''}, guessSpendType(name)));
   }
   showCsvPreview('페이디카드');
 }
@@ -1311,9 +1412,9 @@ function parseCustom(text) {
     const cols=parseLine(lines[i]).map(clean);if(cols.length<6)continue;
     const row={};headers.forEach((h,j)=>row[h]=cols[j]||'');
     const amt=parseInt((row['금액']||'0').replace(/,/g,''));if(!amt)continue;
-    parsedCsv.push({date:row['날짜']||'',item:row['항목']||'',category:row['카테고리']||'기타',
+    parsedCsv.push(applySpendTypeFields({date:row['날짜']||'',item:row['항목']||'',category:row['카테고리']||'기타',
       payment:row['결제수단']||'PayPay카드',amount:amt,
-      isBalance:row['잔고여부']==='TRUE'||row['잔고여부']==='true',memo:row['메모']||''});
+      isBalance:row['잔고여부']==='TRUE'||row['잔고여부']==='true',memo:row['메모']||''}, row['집계구분'] || row['spendType'] || row['구분']));
   }
   showCsvPreview('가계부CSV');
 }
@@ -1332,7 +1433,7 @@ function parseManual() {
     if(payment==='PayPay잔고')isBalance=true;
     let item=line.replace(/^\d{1,2}[\/월]\d{1,2}[일]?\s*/,'').replace(/[\d,]+\s*(엔|円)?/,'').replace(new RegExp(payment.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),'').replace(/paypay잔고|페이페이잔고|라쿠텐카드|페이디카드|paypay카드|페이페이카드|현금|잔고/gi,'').replace(/\s{2,}/g,' ').trim();
     if(!item)item='미분류';
-    parsedCsv.push({date,item,category:guessCat(item),payment,amount,isBalance,memo:''});
+    parsedCsv.push(applySpendTypeFields({date,item,category:guessCat(item),payment,amount,isBalance,memo:''}, guessSpendType(item)));
   }
   showCsvPreview('직접 입력');
 }
@@ -1340,8 +1441,9 @@ function showCsvPreview(cardName) {
   document.getElementById('csvCount').textContent=`${cardName} — ${parsedCsv.length}건 파싱됨`;
   document.getElementById('csvRows').innerHTML=parsedCsv.map((r,i)=>`
     <div class="csv-row">
-      <div class="csv-row-info"><div class="name">${r.date.slice(5)} ${r.item}</div><div class="sub">¥${fmt(r.amount)} · ${r.payment}${r.isBalance?' · 잔고':''}</div></div>
+      <div class="csv-row-info"><div class="name">${r.date.slice(5)} ${r.item}</div><div class="sub">¥${fmt(r.amount)} · ${r.payment}${r.isBalance?' · 잔고':''} · ${normalizeSpendType(r.spendType)}</div></div>
       <select onchange="parsedCsv[${i}].category=this.value">${CATEGORIES.map(c=>`<option value="${c}"${r.category===c?' selected':''}>${c}</option>`).join('')}</select>
+      <select onchange="applySpendTypeFields(parsedCsv[${i}], this.value)">${SPEND_TYPES.map(t=>`<option value="${t}"${normalizeSpendType(r.spendType)===t?' selected':''}>${t}</option>`).join('')}</select>
     </div>`).join('');
   document.getElementById('csvPreview').style.display='block';
 }
@@ -1360,8 +1462,8 @@ async function importCsv() {
 }
 function downloadCsv() {
   if(!parsedCsv.length)return;
-  const header='ID,날짜,항목,카테고리,결제수단,금액,잔고여부,메모';
-  const rows=parsedCsv.map((r,i)=>`${Date.now()+i},${r.date},"${r.item}",${r.category},${r.payment},${r.amount},${r.isBalance?'TRUE':'FALSE'},"${r.memo||''}"`);
+  const header='ID,날짜,항목,카테고리,집계구분,결제수단,금액,잔고여부,메모';
+  const rows=parsedCsv.map((r,i)=>`${Date.now()+i},${r.date},"${r.item}",${r.category},${normalizeSpendType(r.spendType)},${r.payment},${r.amount},${r.isBalance?'TRUE':'FALSE'},"${r.memo||''}"`);
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([header+'\n'+rows.join('\n')],{type:'text/csv;charset=utf-8;'}));
   a.download=`${currentMonth}.csv`;a.click();
