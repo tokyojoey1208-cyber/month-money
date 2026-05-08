@@ -90,6 +90,161 @@ tr:hover td { background: var(--surface2); }
 .muted-text { color: var(--muted); }
 .total-row td { font-weight: 600; border-top: .5px solid var(--border2); border-bottom: none; padding-top: 10px; }
 
+.week-row td {
+  background: var(--surface2);
+  border-top: .5px solid var(--border2);
+  border-bottom: .5px solid var(--border2);
+  padding: 10px 12px;
+}
+.week-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.week-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.week-range {
+  font-variant-numeric: tabular-nums;
+}
+.week-total {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.week-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.week-cat {
+  white-space: nowrap;
+}
+.week-empty-day {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.period-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.period-tab {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: .5px solid var(--border2);
+  background: var(--surface2);
+  color: var(--muted);
+  transition: all .15s;
+}
+.period-tab.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: transparent;
+}
+.scope-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.scope-card {
+  background: var(--surface2);
+  border: .5px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 10px;
+  min-width: 0;
+}
+.scope-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.scope-value {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scope-sub {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.table-tools {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.week-toggle-btn {
+  margin-left: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: .5px solid var(--border2);
+  color: var(--text);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.week-row td {
+  cursor: pointer;
+}
+.week-row.active td {
+  box-shadow: inset 3px 0 0 var(--text);
+}
+.period-tab span {
+  vertical-align: baseline;
+}
+.scope-value.small {
+  font-size: 13px;
+}
+.week-pay-split {
+  white-space: nowrap;
+}
+
+.week-main-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.week-count {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.week-collapsed-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+@media (max-width: 600px) {
+  .scope-summary-grid { grid-template-columns: 1fr 1fr; }
+  .week-main { align-items: flex-start; }
+  .week-main-left { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+
+
+
 .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
 .b-pp { background: rgba(26,111,212,.1); color: var(--pp); }
 .b-rk { background: rgba(201,79,26,.1); color: var(--rk); }
@@ -215,6 +370,8 @@ select option { background: var(--surface); }
 <div class="section">
   <div class="section-header"><span class="section-title">카테고리별</span></div>
   <div class="chart-wrap">
+    <div class="period-tabs" id="chartScopeTabs"></div>
+    <div class="scope-summary-grid" id="categoryScopeSummary"></div>
     <div class="chart-legend" id="chartLegend"></div>
     <div style="position:relative;height:170px"><canvas id="catChart"></canvas></div>
   </div>
@@ -223,7 +380,9 @@ select option { background: var(--surface); }
 <div class="section">
   <div class="section-header">
     <span class="section-title">전체 내역</span>
-    <div style="display:flex;gap:6px">
+    <div class="table-tools">
+      <button class="btn btn-ghost btn-sm" onclick="setAllWeeks(false)">전부 펼치기</button>
+      <button class="btn btn-ghost btn-sm" onclick="setAllWeeks(true)">전부 접기</button>
       <select id="filterCat" style="width:auto;padding:4px 8px;font-size:12px" onchange="renderTable()">
         <option value="">전체</option>
         <option value="가계쇼핑">가계쇼핑</option>
@@ -401,6 +560,8 @@ let gasUrl = localStorage.getItem('gasUrl') || GAS_DEFAULT;
 let budget = Number(localStorage.getItem('budget') || 100000);
 let currentMonth = fmtMonth(new Date());
 let allRows = [], catChart = null, parsedCsv = [], csvType = 'paypay';
+let activeChartScope = 'month';
+let collapsedWeeks = JSON.parse(localStorage.getItem('collapsedWeeks') || '{}');
 let fabOpen = false;
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -465,7 +626,7 @@ function renderMonthTabs(months) {
     months.map(m => `<div class="month-tab${m===currentMonth?' active':''}" onclick="switchMonth('${m}')">${m}</div>`).join('') +
     `<div class="month-tab-add" onclick="addNewMonth()">+</div>`;
 }
-function switchMonth(m) { currentMonth = m; document.querySelectorAll('.month-tab').forEach(t=>t.classList.toggle('active',t.textContent===m)); loadMonth(m); }
+function switchMonth(m) { currentMonth = m; activeChartScope = 'month'; document.querySelectorAll('.month-tab').forEach(t=>t.classList.toggle('active',t.textContent===m)); loadMonth(m); }
 function addNewMonth() { const m = prompt('월 입력 (예: 2026-05)', fmtMonth(new Date())); if (m && /^\d{4}-\d{2}$/.test(m)) { currentMonth=m; refreshMonthTabs([m]); loadMonth(m); } }
 
 // ── 데이터 로드 ──
@@ -481,7 +642,7 @@ async function loadMonth(month) {
   render();
 }
 
-function render() { updateSummary(); renderTable(); renderChart(); }
+function render() { updateSummary(); renderChartScopeTabs(); renderTable(); renderChart(); }
 function isCardCharge(r) { return !r.isBalance && CARD_PAYMENTS.includes(r.payment); }
 function isFixed(r) { return FIXED_CATS.includes(r.category); }
 
@@ -515,45 +676,386 @@ function daysLeftInMonth() {
   return (now.getFullYear()===y && now.getMonth()+1===m) ? last-now.getDate() : last;
 }
 
+
+
+function parseLocalDate(dateStr) {
+  const s = String(dateStr).slice(0, 10);
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function fmtMD(date) {
+  return String(date.getMonth() + 1).padStart(2, '0') + '/' + String(date.getDate()).padStart(2, '0');
+}
+
+function fmtYMD(date) {
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+}
+
+function daysBetweenInclusive(start, end) {
+  return Math.round((end - start) / 86400000) + 1;
+}
+
+function getMonthContainedWeeks(month) {
+  const [y, m] = month.split('-').map(Number);
+  const first = new Date(y, m - 1, 1);
+  const last = new Date(y, m, 0);
+  const weeks = [];
+
+  let cursor = new Date(first);
+  let i = 1;
+
+  while (cursor <= last) {
+    const end = new Date(cursor);
+    end.setDate(cursor.getDate() + (6 - cursor.getDay())); // next Saturday
+    if (end > last) end.setTime(last.getTime());
+
+    weeks.push({
+      key: fmtYMD(cursor),
+      start: new Date(cursor),
+      end: new Date(end),
+      label: `${i}주차`,
+      range: `${fmtMD(cursor)}–${fmtMD(end)}`,
+      dayBase: daysBetweenInclusive(cursor, end)
+    });
+
+    cursor = new Date(end);
+    cursor.setDate(end.getDate() + 1);
+    i++;
+  }
+
+  return weeks;
+}
+
+function getWeekRange(dateStr) {
+  const d = parseLocalDate(dateStr);
+  const month = String(dateStr).slice(0, 7) || currentMonth;
+  const weeks = getMonthContainedWeeks(month);
+  return weeks.find(w => d >= w.start && d <= w.end) || weeks[0];
+}
+
+function getWeekByKey(key) {
+  return getMonthContainedWeeks(currentMonth).find(w => w.key === key);
+}
+
+function groupRowsByWeek(rows) {
+  const groups = new Map();
+
+  rows.forEach(row => {
+    const range = getWeekRange(row.date);
+    if (!range) return;
+
+    if (!groups.has(range.key)) {
+      groups.set(range.key, {
+        key: range.key,
+        start: range.start,
+        end: range.end,
+        label: range.label,
+        range: range.range,
+        dayBase: range.dayBase,
+        rows: []
+      });
+    }
+    groups.get(range.key).rows.push(row);
+  });
+
+  return [...groups.values()].sort((a, b) => a.start - b.start);
+}
+
+function isCreditCardPayment(r) {
+  return !r.isBalance && ['PayPay카드', '라쿠텐카드', '페이디카드'].includes(r.payment);
+}
+
+function isBalancePayment(r) {
+  return r.isBalance || r.payment === 'PayPay잔고';
+}
+
+function isCashPayment(r) {
+  return r.payment === '현금';
+}
+
+function calcPeriodStats(rows, dayBase=1) {
+  const total = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const cardTotal = rows.filter(isCreditCardPayment).reduce((s, r) => s + Number(r.amount || 0), 0);
+  const balanceTotal = rows.filter(isBalancePayment).reduce((s, r) => s + Number(r.amount || 0), 0);
+  const cashTotal = rows.filter(isCashPayment).reduce((s, r) => s + Number(r.amount || 0), 0);
+  const activeDays = new Set(rows.map(r => String(r.date).slice(0, 10))).size;
+  const avgPerCalendarDay = total / Math.max(1, dayBase);
+  const avgPerActiveDay = activeDays ? total / activeDays : 0;
+
+  const paymentTotals = {};
+  rows.forEach(r => {
+    paymentTotals[r.payment] = (paymentTotals[r.payment] || 0) + Number(r.amount || 0);
+  });
+
+  const catTotals = {};
+  rows.forEach(r => {
+    catTotals[r.category] = (catTotals[r.category] || 0) + Number(r.amount || 0);
+  });
+
+  const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  const sortedPayments = Object.entries(paymentTotals).sort((a, b) => b[1] - a[1]);
+
+  return {
+    total,
+    cardTotal,
+    balanceTotal,
+    cashTotal,
+    activeDays,
+    avgPerCalendarDay,
+    avgPerActiveDay,
+    catTotals,
+    sortedCats,
+    paymentTotals,
+    sortedPayments
+  };
+}
+
+function formatTopCats(catTotals, max=3) {
+  const entries = Object.entries(catTotals).filter(([,v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return '<span class="muted-text">카테고리 없음</span>';
+
+  const top = entries.slice(0, max);
+  const rest = entries.slice(max).reduce((s, [,v]) => s + v, 0);
+
+  const parts = top.map(([cat, val]) =>
+    `<span class="week-cat"><span class="cat-dot" style="background:${CAT_COLORS[cat] || '#888'}"></span>${cat} ¥${fmt(val)}</span>`
+  );
+
+  if (rest > 0) parts.push(`<span class="week-cat">기타 ¥${fmt(rest)}</span>`);
+  return parts.join('');
+}
+
+function getChartScopeRows() {
+  if (activeChartScope === 'month') return allRows;
+  return allRows.filter(r => getWeekRange(r.date)?.key === activeChartScope);
+}
+
+function getChartScopeDayBase() {
+  if (activeChartScope === 'month') {
+    const [y, m] = currentMonth.split('-').map(Number);
+    return new Date(y, m, 0).getDate();
+  }
+  const week = getWeekByKey(activeChartScope);
+  return week ? week.dayBase : 1;
+}
+
+function renderChartScopeTabs() {
+  const el = document.getElementById('chartScopeTabs');
+  if (!el) return;
+
+  const weeks = getMonthContainedWeeks(currentMonth);
+  const validScopes = ['month', ...weeks.map(w => w.key)];
+  if (!validScopes.includes(activeChartScope)) activeChartScope = 'month';
+
+  el.innerHTML = [
+    `<button class="period-tab${activeChartScope === 'month' ? ' active' : ''}" onclick="setChartScope('month')">월간</button>`,
+    ...weeks.map(w => `<button class="period-tab${activeChartScope === w.key ? ' active' : ''}" onclick="setChartScope('${w.key}')">${w.label}<span style="font-size:10px;margin-left:4px;opacity:.65">${w.range}</span></button>`)
+  ].join('');
+}
+
+function setChartScope(scope) {
+  activeChartScope = scope;
+
+  if (scope !== 'month') {
+    const map = getCollapsedMap();
+    map[scope] = false; // 선택한 주차는 바로 보이게
+    saveCollapsedWeeks();
+  }
+
+  renderChartScopeTabs();
+  renderChart();
+  renderTable();
+}
+
+function renderCategoryScopeSummary(rows) {
+  const el = document.getElementById('categoryScopeSummary');
+  if (!el) return;
+
+  const dayBase = getChartScopeDayBase();
+  const stat = calcPeriodStats(rows, dayBase);
+  const topCat = stat.sortedCats[0];
+  const topText = topCat ? `${topCat[0]} ¥${fmt(topCat[1])}` : '-';
+  const topPayment = stat.sortedPayments[0];
+  const paymentText = topPayment ? `${topPayment[0]} ¥${fmt(topPayment[1])}` : '-';
+
+  el.innerHTML = `
+    <div class="scope-card">
+      <div class="scope-label">합계</div>
+      <div class="scope-value">¥${fmt(stat.total)}</div>
+      <div class="scope-sub">${rows.length}건 · ${dayBase}일 기준</div>
+    </div>
+    <div class="scope-card">
+      <div class="scope-label">결제 구분</div>
+      <div class="scope-value small">카드 ¥${fmt(stat.cardTotal)}</div>
+      <div class="scope-sub">잔고 ¥${fmt(stat.balanceTotal)} / 현금 ¥${fmt(stat.cashTotal)}</div>
+    </div>
+    <div class="scope-card">
+      <div class="scope-label">평균</div>
+      <div class="scope-value">¥${fmt(stat.avgPerCalendarDay)}</div>
+      <div class="scope-sub">입력일평균 ¥${fmt(stat.avgPerActiveDay)}</div>
+    </div>
+    <div class="scope-card">
+      <div class="scope-label">주요 항목</div>
+      <div class="scope-value small">${topText}</div>
+      <div class="scope-sub">${paymentText}</div>
+    </div>`;
+}
+
+function getCollapsedMap() {
+  if (!collapsedWeeks[currentMonth]) collapsedWeeks[currentMonth] = {};
+  return collapsedWeeks[currentMonth];
+}
+
+function isWeekCollapsed(key) {
+  const map = getCollapsedMap();
+  return map[key] !== false; // 기본값: 접힘
+}
+
+function saveCollapsedWeeks() {
+  localStorage.setItem('collapsedWeeks', JSON.stringify(collapsedWeeks));
+}
+
+function toggleWeek(key) {
+  const map = getCollapsedMap();
+  map[key] = !isWeekCollapsed(key);
+  saveCollapsedWeeks();
+  renderTable();
+}
+
+function setAllWeeks(collapsed) {
+  const cf = document.getElementById('filterCat').value;
+  const pf = document.getElementById('filterCard').value;
+  const rows = allRows.filter(r => (!cf || r.category === cf) && (!pf || r.payment === pf));
+  const groups = groupRowsByWeek(rows);
+  const map = getCollapsedMap();
+  groups.forEach(g => { map[g.key] = collapsed; });
+  saveCollapsedWeeks();
+  renderTable();
+}
+
+function renderWeekHeader(group) {
+  const stat = calcPeriodStats(group.rows, group.dayBase);
+  const collapsed = isWeekCollapsed(group.key);
+  const active = activeChartScope === group.key;
+  const avgText = `일평균 ¥${fmt(stat.avgPerCalendarDay)}`;
+  const catText = formatTopCats(stat.catTotals, 3);
+
+  return `
+    <tr class="week-row${active ? ' active' : ''}" onclick="toggleWeek('${group.key}')">
+      <td colspan="6">
+        <div class="week-summary">
+          <div class="week-main">
+            <div class="week-main-left">
+              <span class="week-range">${group.label} · ${group.range}</span>
+              <span class="week-count">${group.dayBase}일 · ${group.rows.length}건</span>
+            </div>
+            <span class="week-total">¥${fmt(stat.total)} <button class="week-toggle-btn" onclick="event.stopPropagation();toggleWeek('${group.key}')">${collapsed ? '펼치기' : '접기'}</button></span>
+          </div>
+          <div class="week-sub">
+            <span>${avgText}</span>
+            <span class="week-pay-split">카드 ¥${fmt(stat.cardTotal)}</span>
+            <span class="week-pay-split">잔고 ¥${fmt(stat.balanceTotal)}</span>
+            ${stat.cashTotal ? `<span class="week-pay-split">현금 ¥${fmt(stat.cashTotal)}</span>` : ''}
+            ${catText}
+            ${collapsed ? '<span class="week-collapsed-note">세부내역 접힘</span>' : ''}
+          </div>
+        </div>
+      </td>
+    </tr>`;
+}
+
 function renderTable() {
   const cf = document.getElementById('filterCat').value;
   const pf = document.getElementById('filterCard').value;
-  const rows = allRows.filter(r=>(!cf||r.category===cf)&&(!pf||r.payment===pf)).sort((a,b)=>String(a.date)<String(b.date)?-1:1);
+  const rows = allRows
+    .filter(r => (!cf || r.category === cf) && (!pf || r.payment === pf))
+    .sort((a, b) => String(a.date) < String(b.date) ? -1 : 1);
+
   if (!rows.length) {
     document.getElementById('txBody').innerHTML = `<tr><td colspan="6"><div class="empty">내역 없음</div></td></tr>`;
-    document.getElementById('txFoot').innerHTML = ''; return;
+    document.getElementById('txFoot').innerHTML = '';
+    return;
   }
-  document.getElementById('txBody').innerHTML = rows.map(r => `
-    <tr>
-      <td class="muted-text">${String(r.date).slice(5)}</td>
-      <td>${r.item}${r.memo?`<span style="font-size:11px;color:var(--muted);margin-left:5px">${r.memo}</span>`:''}</td>
-      <td><span class="cat-dot" style="background:${CAT_COLORS[r.category]||'#888'}"></span>${r.category}</td>
-      <td><span class="badge ${PAY_BADGE[r.payment]||'b-cash'}">${r.payment}</span></td>
-      <td class="num${r.isBalance?' muted-text':''}">${fmt(r.amount)}</td>
-      <td style="text-align:right;display:flex;gap:4px;justify-content:flex-end">
-        <button class="btn btn-ghost btn-sm" onclick='editEntry(${JSON.stringify(r)})'>편집</button>
-        <button class="btn btn-sm" style="background:rgba(214,48,48,.08);color:#d63030;border:.5px solid rgba(214,48,48,.2)" onclick='deleteEntry(${r._rowIndex})'>삭제</button>
-      </td>
-    </tr>`).join('');
-  const total = rows.filter(isCardCharge).reduce((s,r)=>s+r.amount,0);
-  document.getElementById('txFoot').innerHTML = `<tr class="total-row"><td colspan="4">카드 청구 합계</td><td class="num">${fmt(total)}</td><td></td></tr>`;
+
+  const weekGroups = groupRowsByWeek(rows);
+
+  document.getElementById('txBody').innerHTML = weekGroups.map(group => {
+    const collapsed = isWeekCollapsed(group.key);
+    const rowHtml = collapsed ? '' : group.rows.map(r => `
+      <tr>
+        <td class="muted-text">${String(r.date).slice(5)}</td>
+        <td>${r.item}${r.memo ? `<span style="font-size:11px;color:var(--muted);margin-left:5px">${r.memo}</span>` : ''}</td>
+        <td><span class="cat-dot" style="background:${CAT_COLORS[r.category] || '#888'}"></span>${r.category}</td>
+        <td><span class="badge ${PAY_BADGE[r.payment] || 'b-cash'}">${r.payment}</span></td>
+        <td class="num${r.isBalance ? ' muted-text' : ''}">${fmt(r.amount)}</td>
+        <td style="text-align:right;display:flex;gap:4px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick='editEntry(${JSON.stringify(r)})'>편집</button>
+          <button class="btn btn-sm" style="background:rgba(214,48,48,.08);color:#d63030;border:.5px solid rgba(214,48,48,.2)" onclick='deleteEntry(${r._rowIndex})'>삭제</button>
+        </td>
+      </tr>`).join('');
+
+    return renderWeekHeader(group) + rowHtml;
+  }).join('');
+
+  const [y, m] = currentMonth.split('-').map(Number);
+  const monthDays = new Date(y, m, 0).getDate();
+  const stat = calcPeriodStats(rows, monthDays);
+  const topCat = stat.sortedCats[0];
+
+  document.getElementById('txFoot').innerHTML = `
+    <tr class="total-row">
+      <td colspan="2">필터 기준 합계</td>
+      <td>${topCat ? `${topCat[0]} ¥${fmt(topCat[1])}` : '-'}</td>
+      <td class="num">전체 ${fmt(stat.total)}</td>
+      <td class="num">카드 ${fmt(stat.cardTotal)}</td>
+      <td class="muted-text" style="text-align:right">잔고 ${fmt(stat.balanceTotal)}</td>
+    </tr>`;
 }
 
 function renderChart() {
-  const totals = {}; CATEGORIES.forEach(c=>totals[c]=0);
-  allRows.forEach(r=>{ totals[r.category]=(totals[r.category]||0)+r.amount; });
-  const labels = CATEGORIES.filter(c=>totals[c]>0);
-  const data = labels.map(c=>totals[c]), colors = labels.map(c=>CAT_COLORS[c]);
-  document.getElementById('chartLegend').innerHTML = labels.map((c,i)=>
-    `<div class="legend-item"><div class="legend-sq" style="background:${colors[i]}"></div>${c} ¥${fmt(totals[c])}</div>`).join('');
+  const scopeRows = getChartScopeRows();
+  renderCategoryScopeSummary(scopeRows);
+
+  const totals = {};
+  CATEGORIES.forEach(c => totals[c] = 0);
+  scopeRows.forEach(r => { totals[r.category] = (totals[r.category] || 0) + r.amount; });
+
+  const labels = CATEGORIES.filter(c => totals[c] > 0);
+  const data = labels.map(c => totals[c]);
+  const colors = labels.map(c => CAT_COLORS[c]);
+
+  document.getElementById('chartLegend').innerHTML = labels.length
+    ? labels.map((c, i) => `<div class="legend-item"><div class="legend-sq" style="background:${colors[i]}"></div>${c} ¥${fmt(totals[c])}</div>`).join('')
+    : '<div class="legend-item">선택 범위 내역 없음</div>';
+
   const ctx = document.getElementById('catChart').getContext('2d');
   if (catChart) catChart.destroy();
+
   catChart = new Chart(ctx, {
-    type:'bar', data:{labels, datasets:[{data, backgroundColor:colors.map(c=>c+'bb'), borderColor:colors, borderWidth:1, borderRadius:4}]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' ¥'+fmt(c.parsed.y)}}},
-      scales:{ x:{grid:{color:'rgba(0,0,0,.05)'}, ticks:{color:'#888',font:{size:11}}},
-               y:{grid:{color:'rgba(0,0,0,.05)'}, ticks:{color:'#888',font:{size:11},callback:v=>'¥'+fmt(v)}} } }
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors.map(c => c + 'bb'),
+        borderColor: colors,
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ' ¥' + fmt(c.parsed.y) } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#888', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#888', font: { size: 11 }, callback: v => '¥' + fmt(v) } }
+      }
+    }
   });
 }
 
