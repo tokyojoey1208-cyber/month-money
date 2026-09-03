@@ -10,6 +10,7 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./patch.css?v=20260904-3" />
+  <link rel="stylesheet" href="./v4.css?v=20260904-6" />
 </head>
 <body>
   <header class="app-header">
@@ -19,12 +20,10 @@
     </button>
     <div class="header-spacer"></div>
     <select id="monthSelect" class="month-select" aria-label="월 선택"></select>
-    <button id="syncButton" class="icon-button" aria-label="동기화">↻</button>
-    <button id="quickButton" class="quick-button" aria-label="빠른 추가">＋</button>
+    <button id="syncButton" class="icon-button" aria-label="데이터 상태">✓</button>
+    <button id="quickButton" class="quick-button" aria-label="큰 지출 편집">＋</button>
   </header>
-
   <aside id="desktopNav" class="desktop-nav"></aside>
-
   <main class="app-main">
     <section id="screen-home" class="screen active" data-screen="home"></section>
     <section id="screen-flow" class="screen" data-screen="flow"></section>
@@ -32,19 +31,14 @@
     <section id="screen-seed" class="screen" data-screen="seed"></section>
     <section id="screen-more" class="screen" data-screen="more"></section>
   </main>
-
   <nav id="mobileNav" class="mobile-nav" aria-label="메인 메뉴"></nav>
-
   <div id="sheet" class="sheet" aria-hidden="true">
     <button id="sheetBackdrop" class="sheet-backdrop" aria-label="닫기"></button>
     <section class="sheet-panel" role="dialog" aria-modal="true">
-      <div class="sheet-handle"></div>
-      <div id="sheetContent"></div>
+      <div class="sheet-handle"></div><div id="sheetContent"></div>
     </section>
   </div>
-
   <div id="toast" class="toast" role="status"></div>
-
-  <script src="./snapshot-loader.js?v=20260904-1" defer></script>
+  <script src="./snapshot-loader.js?v=20260904-6" defer></script>
 </body>
 </html>
