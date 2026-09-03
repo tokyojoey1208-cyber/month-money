@@ -1,0 +1,15 @@
+name: Validate MY MONEY V2
+on:
+  push:
+    branches: [v2-rebuild]
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check app-v3.js
+      - run: node --check snapshot-loader.js
