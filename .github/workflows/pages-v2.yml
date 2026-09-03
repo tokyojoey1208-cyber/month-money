@@ -23,6 +23,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Validate JavaScript
+        run: |
+          node --check v4-core.js
+          node --check v4-home-flow.js
+          node --check v4-income.js
+          node --check v4-seed-more.js
+          node --check v4-init.js
+          node --check v5-ux-audit.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
