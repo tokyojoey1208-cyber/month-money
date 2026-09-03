@@ -66,4 +66,6 @@ const gas=fs.readFileSync('apps-script/Code.gs','utf8');
 assert.match(gas,/saveAll_/,'backend whole-state save present');
 assert.match(gas,/ACTUAL:'13 현실잔고'/,'actual balance backend present');
 assert.match(gas,/CARDS:'14 카드·고정비'/,'cards-fixed backend present');
+assert.match(gas,/flowMode:s_\(x\[10\]\)===['"]카드청구포함['"]\?['"]카드청구포함['"]:['"]별도차감['"]/,'backend reads fixed-cost flow mode');
+assert.match(gas,/x\.flowMode===['"]카드청구포함['"]\?['"]카드청구포함['"]:['"]별도차감['"]/,'backend writes fixed-cost flow mode');
 console.log('MY MONEY self-QA scenarios: PASS');
