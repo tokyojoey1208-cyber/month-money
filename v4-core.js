@@ -9,10 +9,10 @@
   M.today=()=>new Date().toISOString().slice(0,10); M.thisMonth=()=>M.today().slice(0,7);
   M.monthOffset=(m,d)=>{const [y,mo]=m.split('-').map(Number),x=new Date(y,mo-1+d,1);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`};
   M.fmt=(v,c='JPY')=>c==='JPY'?`¥${Math.round(M.num(v)).toLocaleString('ja-JP')}`:c==='KRW'?`₩${Math.round(M.num(v)).toLocaleString('ko-KR')}`:`$${M.num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-  const blank=()=>({meta:{source:'empty'},settings:{startMonth:'2026-09',startBalances:{JPY:0,KRW:0,USD:0}},flow:{},ledger:[],salaries:[],templates:[],projects:[],sessions:[],payouts:[],fx:[],settlements:[],fixedTemplates:[],cardAccounts:[],seed:{planStart:'2027-01',targetCurrency:'KRW',longGoal:0,annualGoal:0,rows:[]}});
+  const blank=()=>({meta:{source:'empty'},settings:{startMonth:'2026-09',startBalances:{JPY:0,KRW:0,USD:0}},flow:{},ledger:[],salaries:[],templates:[],projects:[],sessions:[],payouts:[],fx:[],settlements:[],fixedTemplates:[],cardAccounts:[],timers:{},seed:{planStart:'2027-01',targetCurrency:'KRW',longGoal:0,annualGoal:0,rows:[]}});
   try{M.state=JSON.parse(localStorage.getItem(M.APP_KEY)||'null')||blank()}catch{M.state=blank()}
   M.state.settings||={startMonth:'2026-09',startBalances:{JPY:0,KRW:0,USD:0}}; M.state.settings.startBalances||={JPY:0,KRW:0,USD:0};
-  ['flow','ledger','salaries','templates','projects','sessions','payouts','fx','settlements','fixedTemplates','cardAccounts'].forEach(k=>M.state[k]||=(k==='flow'?{}:[]));
+  ['flow','ledger','salaries','templates','projects','sessions','payouts','fx','settlements','fixedTemplates','cardAccounts'].forEach(k=>M.state[k]||=(k==='flow'?{}:[])); M.state.timers||={};
   M.state.seed||={planStart:'2027-01',targetCurrency:'KRW',longGoal:0,annualGoal:0,rows:[]}; M.state.seed.rows||=[];
   M.screen='home'; M.flowTab='summary'; M.incomeTab='main'; M.sideTab='work'; M.selectedMonth=M.state.settings.startMonth||M.thisMonth();
   M.save=()=>localStorage.setItem(M.APP_KEY,JSON.stringify(M.state));
