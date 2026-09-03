@@ -1,0 +1,38 @@
+(() => {
+  const M = window.MM = {};
+  M.APP_KEY='my-money-v3-state';
+  M.NAV=[['home','⌂','HOME'],['flow','↔','FLOW'],['income','＋','INCOME'],['seed','◎','SEED'],['more','•••','MORE']];
+  M.$=(q,r=document)=>r.querySelector(q); M.$$=(q,r=document)=>[...r.querySelectorAll(q)];
+  M.num=v=>Number(v||0); M.clone=v=>JSON.parse(JSON.stringify(v));
+  M.safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  M.uid=(p='id')=>`${p}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+  M.today=()=>new Date().toISOString().slice(0,10); M.thisMonth=()=>M.today().slice(0,7);
+  M.monthOffset=(m,d)=>{const [y,mo]=m.split('-').map(Number),x=new Date(y,mo-1+d,1);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`};
+  M.fmt=(v,c='JPY')=>c==='JPY'?`¥${Math.round(M.num(v)).toLocaleString('ja-JP')}`:c==='KRW'?`₩${Math.round(M.num(v)).toLocaleString('ko-KR')}`:`$${M.num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  const blank=()=>({meta:{source:'empty'},settings:{startMonth:'2026-09',startBalances:{JPY:0,KRW:0,USD:0}},flow:{},ledger:[],salaries:[],templates:[],projects:[],sessions:[],payouts:[],fx:[],settlements:[],fixedTemplates:[],cardAccounts:[],seed:{planStart:'2027-01',targetCurrency:'KRW',longGoal:0,annualGoal:0,rows:[]}});
+  try{M.state=JSON.parse(localStorage.getItem(M.APP_KEY)||'null')||blank()}catch{M.state=blank()}
+  M.state.settings||={startMonth:'2026-09',startBalances:{JPY:0,KRW:0,USD:0}}; M.state.settings.startBalances||={JPY:0,KRW:0,USD:0};
+  ['flow','ledger','salaries','templates','projects','sessions','payouts','fx','settlements','fixedTemplates','cardAccounts'].forEach(k=>M.state[k]||=(k==='flow'?{}:[]));
+  M.state.seed||={planStart:'2027-01',targetCurrency:'KRW',longGoal:0,annualGoal:0,rows:[]}; M.state.seed.rows||=[];
+  M.screen='home'; M.flowTab='summary'; M.incomeTab='main'; M.sideTab='work'; M.selectedMonth=M.state.settings.startMonth||M.thisMonth();
+  M.save=()=>localStorage.setItem(M.APP_KEY,JSON.stringify(M.state));
+  M.months=()=>{const s=new Set([M.state.settings.startMonth,M.thisMonth(),...Object.keys(M.state.flow),...M.state.ledger.map(x=>x.month),...M.state.salaries.map(x=>x.payMonth),...M.state.payouts.map(x=>x.payMonth),...M.state.seed.rows.map(x=>x.month)].filter(Boolean));let a=[...s].sort();if(!a.length)return[M.thisMonth()];let out=[],m=a[0],end=a.at(-1),g=0;while(m<=end&&g++<80){out.push(m);m=M.monthOffset(m,1)}return out};
+  M.fxFor=(m=M.selectedMonth)=>[...M.state.fx].filter(x=>x.month<=m).sort((a,b)=>a.month.localeCompare(b.month)).at(-1)||{krwPer100Jpy:0,jpyPerUsd:0};
+  M.toJpy=(v,c,m=M.selectedMonth)=>{const r=M.fxFor(m);if(c==='JPY')return M.num(v);if(c==='KRW'&&M.num(r.krwPer100Jpy))return M.num(v)/M.num(r.krwPer100Jpy)*100;if(c==='USD'&&M.num(r.jpyPerUsd))return M.num(v)*M.num(r.jpyPerUsd);return null};
+  M.eq=(v,c,m=M.selectedMonth)=>{if(c==='JPY')return'';const j=M.toJpy(v,c,m);return j==null?'환율 미등록':`≈ ${M.fmt(j,'JPY')} · 등록환율 기준`};
+  M.flow=(c,m=M.selectedMonth)=>{const r=M.state.flow?.[m]?.[c]||{},n=M.num;const x={start:n(r.start),main:n(r.main),side:n(r.side),otherIn:n(r.otherIn),card:n(r.card),fixed:n(r.fixed),otherOut:n(r.otherOut),settlement:n(r.settlement),fxIn:n(r.fxIn),fxOut:n(r.fxOut),adjust:n(r.adjust)};x.end=('end'in r)?n(r.end):x.start+x.main+x.side+x.otherIn-x.card-x.fixed-x.otherOut-x.settlement+x.fxIn-x.fxOut+x.adjust;return x};
+  M.ledgerRows=(m=M.selectedMonth)=>M.state.ledger.filter(x=>x.month===m&&x.reflect!=='미반영');
+  M.bigOutRows=(m=M.selectedMonth)=>M.ledgerRows(m).filter(x=>['카드청구','고정비','기타지출','상환·지원금'].includes(x.category));
+  M.salaryTotals=s=>{const e=(s.items||[]).filter(x=>x.kind==='지급').reduce((a,b)=>a+M.num(b.amount),0),d=(s.items||[]).filter(x=>x.kind==='공제').reduce((a,b)=>a+M.num(b.amount),0);return{earn:e,ded:d,net:e-d}};
+  M.project=id=>M.state.projects.find(x=>x.id===id);
+  M.sessionValue=(p,s)=>{const h=M.num(s.minutes)/60,g=p?.model==='시급'?h*M.num(p.hourlyPay):M.num(s.pass)*M.num(p?.unitPay)+M.num(s.fail)*M.num(p?.failPay);return{gross:g,ded:g*M.num(p?.deductionRate),net:g*(1-M.num(p?.deductionRate))}};
+  M.workSummary=(p,m=M.selectedMonth)=>{const ss=M.state.sessions.filter(x=>x.projectId===p.id&&String(x.date).startsWith(m));let mins=0,gross=0,net=0,count=0;ss.forEach(s=>{const q=M.sessionValue(p,s);mins+=M.num(s.minutes);gross+=q.gross;net+=q.net;count+=M.num(s.pass)+M.num(s.fail)+M.num(s.hold)+M.num(s.excluded)});return{sessions:ss.length,mins,gross,net,count,hourly:mins?net/(mins/60):0}};
+  M.banner=()=>'<div class="source-banner live">● 실제 MY MONEY 데이터 · 편집은 이 기기에 즉시 저장</div>';
+  M.openSheet=html=>{M.$('#sheetContent').innerHTML=html;M.$('#sheet').classList.add('open');M.$('#sheet').setAttribute('aria-hidden','false')};
+  M.closeSheet=()=>{M.$('#sheet').classList.remove('open');M.$('#sheet').setAttribute('aria-hidden','true')};
+  let tt; M.toast=t=>{const e=M.$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),1800)};
+  M.recalcMonth=()=>{const m=M.selectedMonth;['JPY','KRW','USD'].forEach(c=>{const rows=M.ledgerRows(m).filter(x=>x.currency===c),sum=cat=>rows.filter(x=>x.category===cat).reduce((a,b)=>a+M.num(b.amount),0);M.state.flow[m]||={};const old=M.state.flow[m][c]||{},start=('start'in old)?M.num(old.start):M.num(M.state.settings.startBalances[c]);const main=sum('본업수입'),side=sum('부업수입'),otherIn=sum('기타수입'),card=sum('카드청구'),fixed=sum('고정비'),otherOut=sum('기타지출'),settlement=rows.filter(x=>x.category==='상환·지원금'&&x.cashMode!=='카드청구포함').reduce((a,b)=>a+M.num(b.amount),0),fxIn=sum('환전유입'),fxOut=sum('환전유출'),adjust=sum('잔고보정');M.state.flow[m][c]={start,main,side,otherIn,card,fixed,otherOut,settlement,fxIn,fxOut,adjust,end:start+main+side+otherIn-card-fixed-otherOut-settlement+fxIn-fxOut+adjust}});M.save()};
+  M.renderHeader=()=>{M.$('#monthSelect').innerHTML=M.months().map(m=>`<option value="${m}" ${m===M.selectedMonth?'selected':''}>${m}</option>`).join('');M.$('#syncButton').textContent='✓';M.$('#syncButton').title='실제 데이터 스냅샷'};
+  M.renderNav=()=>{const h=M.NAV.map(([id,ic,l])=>`<button class="nav-button ${M.screen===id?'active':''}" data-go="${id}"><span>${ic}</span>${l}</button>`).join('');M.$('#mobileNav').innerHTML=h;M.$('#desktopNav').innerHTML=h};
+  M.renderAll=()=>{M.renderHeader();M.renderNav();M.renderHome?.();M.renderFlow?.();M.renderIncome?.();M.renderSeed?.();M.renderMore?.();M.bind?.()};
+})();
