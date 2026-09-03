@@ -17,3 +17,5 @@ jobs:
       - run: node --check v4-income.js
       - run: node --check v4-seed-more.js
       - run: node --check v4-init.js
+      - run: node --check v5-ux-audit.js
+      - run: node --check v6-selfqa.js
