@@ -17,6 +17,19 @@
       const candidates=M.state.ledger.filter(x=>x.category==='부업수입'&&x.month===p.payMonth&&x.currency===p.currency&&!x.linkId&&Math.abs(n(x.amount)-amount)<.01);
       if(candidates.length){candidates[0].linkId=target;p.ledgerId=target;changed=true}
     });
+    // Some historic side income existed only in the cash ledger (e.g. Pointail). Promote it using only real ledger data.
+    M.state.ledger.forEach((x,i)=>{
+      if(x.category!=='부업수입'||x.linkId)return;
+      const text=String(x.item||'').toLowerCase();
+      let project=(M.state.projects||[]).find(p=>text.includes(String(p.name||'').toLowerCase()));
+      if(!project&&text.includes('포인테일'))project=M.state.projects.find(p=>p.id==='pointail');
+      if(!project&&text.includes('플리토'))project=M.state.projects.find(p=>p.id==='flitto-chart2code');
+      if(!project&&text.includes('oneforma'))project=M.state.projects.find(p=>p.id==='oneforma');
+      if(!project)return;
+      const id=`ledger-${project.id}-${x.month}-${i}`,target=`SIDE:${id}`;
+      M.state.payouts.push({id,projectId:project.id,workMonth:x.workMonth||x.month,payDate:x.date||'',payMonth:x.payMonth||x.month,currency:x.currency,expected:n(x.amount),actual:x.status==='확정'?n(x.amount):0,status:x.status==='확정'?'입금완료':'입금예정',ledgerId:target,jpy:0,memo:x.memo||'원장 이력 자동연결'});
+      x.linkId=target;changed=true;
+    });
     if(changed)M.save();
   }
   migrateLinks();
