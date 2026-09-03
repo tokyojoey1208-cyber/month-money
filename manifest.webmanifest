@@ -1,0 +1,11 @@
+{
+  "name": "MY MONEY V2",
+  "short_name": "MY MONEY",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f7",
+  "theme_color": "#121c27",
+  "description": "JPY, KRW, USD cash-flow and income control board",
+  "icons": []
+}
