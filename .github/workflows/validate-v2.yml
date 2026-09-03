@@ -11,5 +11,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check app-v3.js
       - run: node --check snapshot-loader.js
+      - run: node --check v4-core.js
+      - run: node --check v4-home-flow.js
+      - run: node --check v4-income.js
+      - run: node --check v4-seed-more.js
+      - run: node --check v4-init.js
