@@ -6,7 +6,8 @@ function flow(start,rows,currency){
   const a=rows.filter(x=>x.currency===currency&&x.reflect!=='미반영');
   const sum=cat=>a.filter(x=>x.category===cat).reduce((s,x)=>s+n(x.amount),0);
   const settlement=a.filter(x=>x.category==='상환·지원금'&&x.cashMode!=='카드청구포함').reduce((s,x)=>s+n(x.amount),0);
-  return start+sum('본업수입')+sum('부업수입')+sum('기타수입')-sum('카드청구')-sum('고정비')-sum('기타지출')-settlement+sum('환전유입')-sum('환전유출')+sum('잔고보정');
+  const otherOut=a.filter(x=>x.category==='기타지출'&&x.cashMode!=='카드청구포함').reduce((s,x)=>s+n(x.amount),0);
+  return start+sum('본업수입')+sum('부업수입')+sum('기타수입')-sum('카드청구')-sum('고정비')-otherOut-settlement+sum('환전유입')-sum('환전유출')+sum('잔고보정');
 }
 const row=(currency,category,amount,extra={})=>({currency,category,amount,reflect:'반영',...extra});
 const sep=[
@@ -24,6 +25,12 @@ const cardIncluded=sep.map(x=>x.category==='카드청구'&&x.currency==='JPY'?{.
 assert.ok(Math.abs(flow(494964,cardIncluded,'JPY')-7749.483)<1e-9,'repayment inside card is not double-subtracted');
 assert.equal(cardIncluded.find(x=>x.category==='상환·지원금').amount,450000,'included rebo amount remains stored for visibility');
 assert.equal(cardIncluded.find(x=>x.category==='상환·지원금').cashMode,'카드청구포함','included rebo keeps explicit mode');
+
+const specialSeparate=[...sep,row('JPY','기타지출',70000,{cashMode:'별도차감',item:'부동산 갱신비'})];
+assert.ok(Math.abs(flow(494964,specialSeparate,'JPY')+62250.517)<1e-9,'separate special spend reduces FLOW');
+const specialInCard=[...sep,row('JPY','기타지출',70000,{cashMode:'카드청구포함',item:'부동산 갱신비'})];
+assert.ok(Math.abs(flow(494964,specialInCard,'JPY')-7749.483)<1e-9,'card-included special spend is analysis-only and not double-subtracted');
+assert.equal(specialInCard.at(-1).amount,70000,'card-included special spend amount remains stored for analysis');
 
 const adjusted=[...sep,row('JPY','잔고보정',12000)];
 assert.ok(Math.abs(flow(494964,adjusted,'JPY')-19749.483)<1e-9,'positive reconciliation adjustment');
@@ -47,6 +54,7 @@ const loader=fs.readFileSync('snapshot-loader.js','utf8');
 assert.match(loader,/force\|\|!hasLocal/,'snapshot must not overwrite existing local state without reset');
 assert.match(loader,/v9-rebo-reconcile\.js/,'latest rebo/reconcile patch loaded');
 assert.match(loader,/v10-final-qa\.js/,'final QA guard patch loaded');
+assert.match(loader,/v11-special-spend\.js/,'special spend patch loaded');
 const v6=fs.readFileSync('v6-selfqa.js','utf8');
 assert.match(v6,/M\.isDirectOut/,'direct outflow classifier present');
 assert.match(v6,/카드청구포함/,'card-included repayment mode preserved');
@@ -68,6 +76,10 @@ assert.match(v10,/전부 입력 후 FLOW 적용/,'partial card-detail sums canno
 assert.match(v10,/complete:cards\.length>0&&entered\.length===cards\.length/,'card apply requires every active card value');
 assert.match(v10,/syncSettlementPlans/,'settlement planned amount is recomputed from the ledger after edits');
 assert.match(v10,/totals=\{일본리보:0,한국지원:0\}/,'deleted settlement rows reset stale planned amounts to zero');
+const v11=fs.readFileSync('v11-special-spend.js','utf8');
+assert.match(v11,/특수지출 · 이달 왜 비싸지/,'special spend monthly explanation view present');
+assert.match(v11,/카드청구포함 · 분석만/,'special spend supports card-included analysis-only mode');
+assert.match(v11,/x\.category==='기타지출'&&x\.cashMode!==CARD_INCLUDED/,'card-included special spend excluded from FLOW otherOut');
 const gas=fs.readFileSync('apps-script/Code.gs','utf8');
 assert.match(gas,/saveAll_/,'backend whole-state save present');
 assert.match(gas,/ACTUAL:'13 현실잔고'/,'actual balance backend present');
