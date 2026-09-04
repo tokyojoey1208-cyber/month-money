@@ -46,6 +46,7 @@ assert.equal(330000+3000+13760-(13790+322+25620+1832+6110+8100),290986,'salary s
 const loader=fs.readFileSync('snapshot-loader.js','utf8');
 assert.match(loader,/force\|\|!hasLocal/,'snapshot must not overwrite existing local state without reset');
 assert.match(loader,/v9-rebo-reconcile\.js/,'latest rebo/reconcile patch loaded');
+assert.match(loader,/v10-final-qa\.js/,'final QA guard patch loaded');
 const v6=fs.readFileSync('v6-selfqa.js','utf8');
 assert.match(v6,/M\.isDirectOut/,'direct outflow classifier present');
 assert.match(v6,/카드청구포함/,'card-included repayment mode preserved');
@@ -62,6 +63,11 @@ assert.match(v9,/추가차감 0/,'included rebo explicitly says no second cash d
 assert.match(v9,/RECON:/,'month-end reconcile uses stable linked adjustment id');
 assert.match(v9,/월말 잔액맞춤/,'month-end balance matching flow present');
 assert.match(v9,/스이카 충전/,'tiny-spend policy is explicit in UI');
+const v10=fs.readFileSync('v10-final-qa.js','utf8');
+assert.match(v10,/전부 입력 후 FLOW 적용/,'partial card-detail sums cannot replace monthly card FLOW');
+assert.match(v10,/complete:cards\.length>0&&entered\.length===cards\.length/,'card apply requires every active card value');
+assert.match(v10,/syncSettlementPlans/,'settlement planned amount is recomputed from the ledger after edits');
+assert.match(v10,/totals=\{일본리보:0,한국지원:0\}/,'deleted settlement rows reset stale planned amounts to zero');
 const gas=fs.readFileSync('apps-script/Code.gs','utf8');
 assert.match(gas,/saveAll_/,'backend whole-state save present');
 assert.match(gas,/ACTUAL:'13 현실잔고'/,'actual balance backend present');
