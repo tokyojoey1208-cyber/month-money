@@ -23,6 +23,7 @@ jobs:
       - run: node --check v8-migration.js
       - run: node --check v9-rebo-reconcile.js
       - run: node --check v10-final-qa.js
+      - run: node --check v11-special-spend.js
       - name: Parse Apps Script as JavaScript
         run: cp apps-script/Code.gs /tmp/my-money-code.js && node --check /tmp/my-money-code.js
       - run: node tests/logic-selfqa.mjs
